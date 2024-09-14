@@ -1,7 +1,7 @@
 # poll-blogger
 A python program that sets up and runs tournaments on Tumblr with (hopefully) minimal human tedium
 
-I will immediately preface this by saying that this program is not functionally complete. Currently, the ability to implement **standard seeding** as well as the option to **render a chart of the competition** are not implemented. Furthermore, **it is currently impossible to imput competitor propaganda through the program**; you have to edit the competitor JSON file. I will probably get around to adding these eventually. But you could always do my work for me :)
+I will immediately preface this by saying that this program is not functionally complete. Currently, the ability to implement **standard seeding** as well as the option to **render a chart of the competition** are not implemented. Furthermore, **it is currently impossible to imput competitor propaganda through the program**; you have to edit the competitor JSON file. I will probably get around to adding these eventually. But hey! You could always take fate into your own hands and do my work for me :)
 
 Also, I don't know if there is a good way to ship a python virtual environment with a program so you're going to have to set up your own. I do have a nice reqirement.txt file that you should be able to use to install everything you need with pip.
 
