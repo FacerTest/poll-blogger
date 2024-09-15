@@ -185,6 +185,35 @@ if roundNumber == 0:
                     ]
                 }
                 competitorDict["competitor"+str(listPos)] = dictSection
+        case 3:
+            #implements what I beleive to be standard seeding, where the 1st seed goes against the last seed and the 2nd seed goes against the 2nd lst seed and so on
+            constructedSeedList = [1, 2]
+            while len(constructedSeedList) < len(seedList):
+                print(constructedSeedList)
+                matchupList = []
+                for x in constructedSeedList:
+                    matchup = [x, 2*len(constructedSeedList)-x+1]
+                    matchupList.append(matchup)
+                constructedSeedList = []
+                for x in range(len(matchupList)):
+                    for y in matchupList[x]:
+                        constructedSeedList.append(y)
+            finalSeedList = constructedSeedList
+            finalOrder = []
+            for x in range(len(finalSeedList)):
+                finalOrder.append(competitorNames[int(finalSeedList[x]-1)])
+                dictSection = {
+                "position": x+1,
+                "seed": finalSeedList[x],
+                "lastRound": 1,
+                "name": competitorNames[int(finalSeedList[x]-1)],
+                "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
+                "propaganda":[
+                    "(no propaganda submitted)"
+                    ]
+                }
+                competitorDict["competitor"+str(x+1)] = dictSection
+
         case 4:
             # Randomised cohort seeding
             # Sets up cohort 1
