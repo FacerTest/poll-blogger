@@ -1,5 +1,5 @@
 # poll-blogger
-A python program that sets up and runs tournaments on Tumblr with (hopefully) minimal human tedium
+A python program that sets up and runs single elimination tournaments on Tumblr with (hopefully) minimal human tedium
 
 I will immediately preface this by saying that this program is not functionally complete. Currently, the ability to **render a chart of the competition** is not implemented, despite there being an option to do so in the program. Furthermore, **it is currently impossible to input competitor propaganda through the program**; you have to edit the competitor JSON file. I will probably get around to adding these eventually. But hey! You could always take fate into your own hands and do my work for me :)
 
