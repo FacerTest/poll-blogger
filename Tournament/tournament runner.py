@@ -44,7 +44,6 @@ try:
     # dunno how I feel about storing this stuff in plaintext... but it's not like there's anything else I can really do
     with open("credentials.json", "w") as f:
         json.dump(clientInfo, f)
-
 except FileExistsError:
     # loading saved credentials file
     print("Using saved credentials...")
@@ -124,8 +123,8 @@ if roundNumber == 0:
     competitorDict = dict({})
     while tempCounter < competitorQuantity:
         tempCounter = tempCounter+1
-        #tempNameHolder = tempCounter
-        tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
+        tempNameHolder = tempCounter
+        #tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
         competitorNames.append(tempNameHolder)
         tempPropagandaTitle = tempNameHolder
         #while True:
@@ -336,7 +335,7 @@ else:
             dictSection = competitorList["competitor"+str(tempCounter)]
             if dictSection["lastRound"] >= roundNumber:
                 competitorCounter = competitorCounter + 1
-                print(str(competitorCounter)+". "+dictSection["name"])
+                print(str(competitorCounter)+". "+str(dictSection["name"]))
                 finalOrder.append(dictSection["name"])
                 finalOrderPos.append(dictSection["position"])
         currentRoundCompetitorQuantity = len(finalOrder)
@@ -484,9 +483,9 @@ else:
                     while tempCounter < currentRoundCompetitorQuantity:
                         while True:
                             tempCounter = tempCounter + 1
-                            print("1. "+finalOrder[tempCounter - 1])
+                            print("1. "+str(finalOrder[tempCounter - 1]))
                             tempCounter = tempCounter + 1
-                            response = input("2. "+finalOrder[tempCounter - 1]+"\n3. (skip this matchup)\n")
+                            response = input("2. "+str(finalOrder[tempCounter - 1])+"\n3. (skip this matchup)\n")
                             match response:
                                 case "1":
                                     #moving selected competitor to next round
@@ -517,24 +516,81 @@ else:
                         f.write(competitorDict)
                     break
                 case "3":
-                    # (this option is currently completely nonfunctional... whoops! maybe one day...)
+                    # finding the longest name and getting a list of all the competitors in the competition
+                    firstRoundCompetitors = []
+                    maxNameLength = 0
+                    for x in range(1, competitorQuantity+1):
+                        dictSection = competitorList["competitor"+str(x)]
+                        firstRoundCompetitors.append(dictSection["name"])
+                        if len(str(dictSection["name"])) > maxNameLength:
+                            maxNameLength = len(str(dictSection["name"]))
+                    print(firstRoundCompetitors)
+                    print(maxNameLength)
                     #setting up dimensions for image
-                    deadspaceWidth = 10
-                    verticalCompetitorSpacing = 10
-                    horizontalCompetitorSpacing = 5*verticalCompetitorSpacing
-                    imageHeight = verticalCompetitorSpacing*totalRounds + 2*deadspaceWidth
-                    imageLength = horizontalCompetitorSpacing
-                    imageCenterHorizonal = imageLength/2
-                    imageCenterVertical = imageHeight/2
+                    lengthPerCharacterSize = 20
+                    fontSize = int(1.5*lengthPerCharacterSize)
+                    lineWidth = 5
+                    deadspaceWidth = lineWidth*4
+                    pointRadius=lineWidth*2
+                    verticalCompetitorSpacing = 2*lengthPerCharacterSize
+                    if maxNameLength < 5:
+                        horizontalCompetitorSpacing = 5*(lengthPerCharacterSize)
+                    else:
+                        horizontalCompetitorSpacing = lengthPerCharacterSize*maxNameLength
+                    imageHeight = (verticalCompetitorSpacing*(competitorQuantity)) + 2*deadspaceWidth
+                    imageLength = 4*(horizontalCompetitorSpacing*int(totalRounds-1)) + 2*deadspaceWidth
                     # setting up a grid where every possible matchup is on...
                     possibleXPositions = [deadspaceWidth]
                     possibleYPositions = [deadspaceWidth]
-                    for x in range(1,int(totalRounds)):
+                    for x in range(1,(4*int(totalRounds))-1):
                         possibleXPositions.append(deadspaceWidth+(x*horizontalCompetitorSpacing))
-                    for x in range(1,competitorQuantity):
+                    for x in range(1,int((competitorQuantity))+1):
                         possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
-                    print("and that's all, folks!")
-                    print("(no, seriously, this isn't done yet)")
+                    imageCenterVertical = possibleYPositions[int(len(possibleYPositions)/2)]
+                    imageCenterHorizontal = possibleXPositions[int(len(possibleXPositions)/2)]
+                    svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />'
+                    # for reference. puts a dot at every single "possible position"
+                    #for x in possibleXPositions:
+                    #    for y in possibleYPositions:
+                    #        svgMarkup += f'<circle cx="{x}" cy="{y}" r="10" fill="black" />\n'
+                    # defining "relevant nodes," where each matchup actually happens
+                    relevantNodes = {}
+                    for x in range(int((len(possibleXPositions)/4))):
+                        relevantNodes[x] = {}
+                    print(relevantNodes)
+                    for x in range(int(len(possibleXPositions)/4)):
+                        nodesToSkip = pow(2, x)
+                        currentLayer = {}
+                        for y in range(int(len(possibleYPositions))):
+                            if nodesToSkip == 0:
+                                nodesToSkip = pow(2, x) - 1
+                                currentLayer[y] = {
+                                    "xPos": 2*x,
+                                    "yPos": y,
+                                }
+                                currentLayer[y+int(len(possibleYPositions)/2)] = {
+                                    "xPos": len(possibleXPositions)-3 -2*x,
+                                    "yPos": y
+                                }
+                            else:
+                                nodesToSkip = nodesToSkip - 1
+                        relevantNodes[x] = currentLayer
+                    print(relevantNodes)
+                    # putting dots on all the relevant nodes
+                    for x in relevantNodes:
+                        for y in relevantNodes[x]:
+                            node = relevantNodes[x][y]
+                            print(node)
+                            svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                    #closng the SVG file and saving it
+                    svgMarkup += '</svg>'
+                    try:
+                        f = open("tourny.svg", "x")
+                    except FileExistsError:
+                        os.remove("tourny.svg")
+                        f = open("tourny.svg", "x")
+                    w = open("tourny.svg", "w")
+                    w.write(str(svgMarkup))
                     break
                 case _:
                     print("That's not an option :(")
