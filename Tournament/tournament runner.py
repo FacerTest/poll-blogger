@@ -1,7 +1,7 @@
 # Howdy!
 # If you're trying to improve my code, I am so very sorry :(
 
-useDummyData = True
+useDummyData = False
 
 import json
 import random
