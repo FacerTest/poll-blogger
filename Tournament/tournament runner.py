@@ -1,68 +1,78 @@
 # Howdy!
-# If you're trying to improve my code, I am so very sorry :( 
+# If you're trying to improve my code, I am so very sorry :(
+
+useDummyData = True
 
 import json
 import random
 import math
 import os
-import pytumblr2
+try:
+    import pytumblr2
+    pytumblr2Installed = True
+except ModuleNotFoundError:
+    print("You don't have pytumblr2 installed!")
+    pytumblr2Installed = False
 import uuid
 
 # saving credentials for pytumblr2...
-try:
-    x = open("credentials.json","x")
-    x.close()
-    while True:
-        response = input("Do you have valid credentials for accessing the Tumblr API? (y/n)\n")
-        match response:
-            case "y":
-                validTumblrCredentials = True
-                print("OK! (You probably want to copy/paste these)")
-                consumerKey=input("What is your consumer key?\n")
-                consumerSecret=input("What is your consumer secret?\n")
-                oauthToken=input("What is your oauth token?\n")
-                oauthSecret=input("What is your oauth secret?\n")
-                postedBlog=input("Now... what is the url of the blog are these polls goint to be posted to?\n")
-                clientInfo = {
-                    "hasCredentials": validTumblrCredentials,
-                    "consumerKey": consumerKey,
-                    "consumerSecret": consumerSecret,
-                    "oauthToken": oauthToken,
-                    "oauthSecret": oauthSecret,
-                    "postedBlog": postedBlog
-                }
-                break
-            case "n":
-                validTumblrCredentials = False
-                print("OK! You won't be able to post polls... obviously.")
-                clientInfo = {
-                    "hasCredentials": validTumblrCredentials
-                }
-                break
-            case _:
-                print("Type \"y\" or \"n\" please")
-    # dunno how I feel about storing this stuff in plaintext... but it's not like there's anything else I can really do
-    with open("credentials.json", "w") as f:
-        json.dump(clientInfo, f)
-except FileExistsError:
-    # loading saved credentials file
-    print("Using saved credentials...")
-    r = open("credentials.json")
-    clientInfo = json.load(r)
-    validTumblrCredentials = clientInfo["hasCredentials"]
-    if validTumblrCredentials == True:
-        consumerKey=clientInfo["consumerKey"]
-        consumerSecret=clientInfo["consumerSecret"]
-        oauthToken=clientInfo["oauthToken"]
-        oauthSecret=clientInfo["oauthSecret"]
-        postedBlog=clientInfo["postedBlog"]
-        client = pytumblr2.TumblrRestClient(
-            consumerKey,
-            consumerSecret,
-            oauthToken,
-            oauthSecret
-        )
-        client.info()
+if pytumblr2Installed == False:
+    print("Skipping saving Tumblr credentials, because you don't have pytumblr2 installed!")
+else:
+    try:
+        x = open("credentials.json","x")
+        x.close()
+        while True:
+            response = input("Do you have valid credentials for accessing the Tumblr API? (y/n)\n")
+            match response:
+                case "y":
+                    validTumblrCredentials = True
+                    print("OK! (You probably want to copy/paste these)")
+                    consumerKey=input("What is your consumer key?\n")
+                    consumerSecret=input("What is your consumer secret?\n")
+                    oauthToken=input("What is your oauth token?\n")
+                    oauthSecret=input("What is your oauth secret?\n")
+                    postedBlog=input("Now... what is the url of the blog are these polls goint to be posted to?\n")
+                    clientInfo = {
+                        "hasCredentials": validTumblrCredentials,
+                        "consumerKey": consumerKey,
+                        "consumerSecret": consumerSecret,
+                        "oauthToken": oauthToken,
+                        "oauthSecret": oauthSecret,
+                        "postedBlog": postedBlog
+                    }
+                    break
+                case "n":
+                    validTumblrCredentials = False
+                    print("OK! You won't be able to post polls... obviously.")
+                    clientInfo = {
+                        "hasCredentials": validTumblrCredentials
+                    }
+                    break
+                case _:
+                    print("Type \"y\" or \"n\" please")
+        # dunno how I feel about storing this stuff in plaintext... but it's not like there's anything else I can really do
+        with open("credentials.json", "w") as f:
+            json.dump(clientInfo, f)
+    except FileExistsError:
+        # loading saved credentials file
+        print("Using saved credentials...")
+        r = open("credentials.json")
+        clientInfo = json.load(r)
+        validTumblrCredentials = clientInfo["hasCredentials"]
+        if validTumblrCredentials == True:
+            consumerKey=clientInfo["consumerKey"]
+            consumerSecret=clientInfo["consumerSecret"]
+            oauthToken=clientInfo["oauthToken"]
+            oauthSecret=clientInfo["oauthSecret"]
+            postedBlog=clientInfo["postedBlog"]
+            client = pytumblr2.TumblrRestClient(
+                consumerKey,
+                consumerSecret,
+                oauthToken,
+                oauthSecret
+            )
+            client.info()
 
 competitorQuantity = 0
 competitorNames = []
@@ -123,8 +133,10 @@ if roundNumber == 0:
     competitorDict = dict({})
     while tempCounter < competitorQuantity:
         tempCounter = tempCounter+1
-        tempNameHolder = tempCounter
-        #tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
+        if useDummyData == True:
+            tempNameHolder = tempCounter
+        else:
+            tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
         competitorNames.append(tempNameHolder)
         tempPropagandaTitle = tempNameHolder
         #while True:
@@ -527,22 +539,23 @@ else:
                     print(firstRoundCompetitors)
                     print(maxNameLength)
                     #setting up dimensions for image
-                    lengthPerCharacterSize = 20
-                    fontSize = int(1.5*lengthPerCharacterSize)
+                    centerNodeOffset = int(totalRounds)
+                    lengthPerCharacterSize = 10
+                    fontSize = int(2*lengthPerCharacterSize)
                     lineWidth = 5
                     deadspaceWidth = lineWidth*4
                     pointRadius=lineWidth*2
                     verticalCompetitorSpacing = 2*lengthPerCharacterSize
                     if maxNameLength < 5:
-                        horizontalCompetitorSpacing = 5*(lengthPerCharacterSize)
+                        horizontalCompetitorSpacing = 5*(lengthPerCharacterSize+2)
                     else:
-                        horizontalCompetitorSpacing = lengthPerCharacterSize*maxNameLength
+                        horizontalCompetitorSpacing = (lengthPerCharacterSize+2)*maxNameLength
                     imageHeight = (verticalCompetitorSpacing*(competitorQuantity)) + 2*deadspaceWidth
-                    imageLength = 4*(horizontalCompetitorSpacing*int(totalRounds-1)) + 2*deadspaceWidth
+                    imageLength = 4*(horizontalCompetitorSpacing*(int(totalRounds))) + 2*deadspaceWidth
                     # setting up a grid where every possible matchup is on...
                     possibleXPositions = [deadspaceWidth]
                     possibleYPositions = [deadspaceWidth]
-                    for x in range(1,(4*int(totalRounds))-1):
+                    for x in range(1,(4*int(totalRounds))+1):
                         possibleXPositions.append(deadspaceWidth+(x*horizontalCompetitorSpacing))
                     for x in range(1,int((competitorQuantity))+1):
                         possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
@@ -552,45 +565,120 @@ else:
                     # for reference. puts a dot at every single "possible position"
                     #for x in possibleXPositions:
                     #    for y in possibleYPositions:
-                    #        svgMarkup += f'<circle cx="{x}" cy="{y}" r="10" fill="black" />\n'
+                    #        svgMarkup += f'<circle cx="{x}" cy="{y}" r="5" fill="red" />\n'
                     # defining "relevant nodes," where each matchup actually happens
+                    maxLevel = 1 + int(len(possibleXPositions)/4)
+                    levelNodeCounter = []
+                    for x in range(maxLevel):
+                        levelNodeCounter.append(0)
                     relevantNodes = {}
-                    for x in range(int((len(possibleXPositions)/4))):
-                        relevantNodes[x] = {}
-                    print(relevantNodes)
-                    for x in range(int(len(possibleXPositions)/4)):
-                        nodesToSkip = pow(2, x)
-                        currentLayer = {}
+                    universalNodeID = 0
+                    for x in range(int(len(possibleXPositions)/2)+1):
+                        layer = int(len(possibleXPositions)/4)-abs(x-int(len(possibleXPositions)/4))
+                        nodesToSkip = pow(2, layer)
                         for y in range(int(len(possibleYPositions))):
                             if nodesToSkip == 0:
-                                nodesToSkip = pow(2, x) - 1
-                                currentLayer[y] = {
-                                    "xPos": 2*x,
-                                    "yPos": y,
-                                }
-                                currentLayer[y+int(len(possibleYPositions)/2)] = {
-                                    "xPos": len(possibleXPositions)-3 -2*x,
-                                    "yPos": y
-                                }
+                                if x == int(len(possibleXPositions)/4):
+                                    relevantNodes[universalNodeID] = {
+                                        "xPos": 2*x,
+                                        "yPos": int(len(possibleYPositions)/2)+centerNodeOffset,
+                                        "layer": layer,
+                                        "posInLayer": levelNodeCounter[layer]
+                                    }
+                                else:
+                                    relevantNodes[universalNodeID] = {
+                                        "xPos": 2*x,
+                                        "yPos": y,
+                                        "layer": layer,
+                                        "posInLayer": levelNodeCounter[layer]
+                                    }
+                                universalNodeID = universalNodeID + 1
+                                levelNodeCounter[layer] = levelNodeCounter[layer]+1
+                                nodesToSkip = pow(2, layer+1) - 1
                             else:
                                 nodesToSkip = nodesToSkip - 1
-                        relevantNodes[x] = currentLayer
-                    print(relevantNodes)
-                    # putting dots on all the relevant nodes
-                    for x in relevantNodes:
-                        for y in relevantNodes[x]:
-                            node = relevantNodes[x][y]
-                            print(node)
-                            svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
-                    #closng the SVG file and saving it
+                    # putting dots on relevant bits
+                    for x in range(len(relevantNodes)):
+                        node = relevantNodes[x]
+                        svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                    # sorting through that ungodly list and returning which nodes are at each layer
+                    nodesSortedByLayer = []
+                    for x in range(maxLevel):
+                        currentLayerNodes = []
+                        for y in range(len(relevantNodes)):
+                            node = relevantNodes[y]
+                            if node["layer"] == x:
+                                currentLayerNodes.append(y)
+                        nodesSortedByLayer.append(currentLayerNodes)
+                    # building the structure of the bracket
+                    for x in range(maxLevel-1):
+                        nextLayer = nodesSortedByLayer[x+1]
+                        currentLayerNodes = nodesSortedByLayer[x]
+                        leftNodes = currentLayerNodes[0:int(len(currentLayerNodes)/2)]
+                        for y in range(len(leftNodes)):
+                            currentNode = relevantNodes[leftNodes[y]]
+                            if len(currentLayerNodes) > 2:
+                                nextNode = relevantNodes[nextLayer[math.floor(y/2)]]
+                            else:
+                                nextNode = relevantNodes[competitorQuantity -1]
+                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[currentNode["xPos"]+1]}" y2="{possibleYPositions[currentNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]+1]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[nextNode["xPos"]]}" y2="{possibleYPositions[nextNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                        rightNodes = currentLayerNodes[int(len(currentLayerNodes)/2):len(currentLayerNodes)]
+                        for y in range(len(rightNodes)):
+                            currentNode = relevantNodes[rightNodes[y]]
+                            if len(currentLayerNodes) > 2:
+                                nextNode = relevantNodes[nextLayer[math.floor((y+len(leftNodes))/2)]]
+                            else:
+                                nextNode = relevantNodes[competitorQuantity-1]
+                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[currentNode["xPos"]-1]}" y2="{possibleYPositions[currentNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]-1]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[nextNode["xPos"]]}" y2="{possibleYPositions[nextNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                    #drawing lines for winner's "podium"
+                    svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                    svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)+1]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                    # labelling all the universal node IDs
+                    #for x in range(int(len(relevantNodes)/2)):
+                    #    node = relevantNodes[x]
+                    #    svgMarkup += f'<text x="{possibleXPositions[node["xPos"]]}" y="{possibleYPositions[node["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{str(x)}</text>'
+                    #    svgMarkup += f'<text x="{possibleXPositions[len(possibleXPositions)-node["xPos"]-1]-horizontalCompetitorSpacing}" y="{possibleYPositions[len(possibleYPositions)-node["yPos"]-2]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{str(len(relevantNodes)-x)}</text>'
+                    
+                    # putting names of competitors in their places
+                    for x in range(roundNumber):
+                        print(f"Started getting ready for round {x+1}")
+                        #getting a list of all nodes in the relevant round
+                        currentRoundNodes = []
+                        for y in range(universalNodeID):
+                            node = relevantNodes[y]
+                            if node["layer"] == x:
+                                currentRoundNodes.append(y)
+                        print("Relevant nodes of the current round", len(currentRoundNodes), currentRoundNodes)
+                        # getting a list of all competitors in the current round
+                        currentRoundCompetitorNames = []
+                        for y in range(len(competitorList)):
+                            competitor = competitorList["competitor"+str(y+1)]
+                            if competitor["lastRound"] >= x+1:
+                                currentRoundCompetitorNames.append(competitor["name"])
+                        print("Relevant competitors in the current round", len(currentRoundCompetitorNames), currentRoundCompetitorNames)
+                        # putting the competitors' names on the bracket
+                        for y in range(int(len(currentRoundNodes)/2)):
+                            currentNode = currentRoundNodes[y]
+                            node = relevantNodes[currentNode]
+                            svgMarkup += f'<text x="{possibleXPositions[node["xPos"]]+pointRadius}" y="{possibleYPositions[node["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{str(currentRoundCompetitorNames[y])}</text>\n'
+                            svgMarkup += f'<text x="{possibleXPositions[len(possibleXPositions)-node["xPos"]-1]-horizontalCompetitorSpacing}" y="{possibleYPositions[len(possibleYPositions)-node["yPos"]-2]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{str(currentRoundCompetitorNames[len(currentRoundCompetitorNames)-y-1])}</text>\n'
+                    # checking if there is a victor
+                    if roundNumber > int(totalRounds):
+                        competitionVictor = finalOrder[0]
+                        svgMarkup += f'<text x="{possibleXPositions[int(len(possibleXPositions)/2)]}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
+                    #closing the SVG file and saving it
                     svgMarkup += '</svg>'
                     try:
-                        f = open("tourny.svg", "x")
+                        f = open("bracket.svg", "x")
                     except FileExistsError:
-                        os.remove("tourny.svg")
-                        f = open("tourny.svg", "x")
-                    w = open("tourny.svg", "w")
+                        os.remove("bracket.svg")
+                        f = open("bracket.svg", "x")
+                    w = open("bracket.svg", "w")
                     w.write(str(svgMarkup))
+                    w.close()
+                    print('Saved bracket image to "bracket.svg"')
                     break
                 case _:
                     print("That's not an option :(")
