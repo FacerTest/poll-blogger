@@ -30,4 +30,4 @@ If you do not have either of those, you will not be able to automatically post p
 ### 2. Record results of this round
 This option will give you each matchup, and you will enter "1" or "2" in order to input which competittor won each matchup.
 ### 3. Render chart for this round
-As mentioned before, this currently does not work.
+Renders a chart of the competition, up to the current round and saves it as an SVG file.
