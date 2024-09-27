@@ -130,11 +130,13 @@ if roundNumber == 0:
             print("That's not an option!")
     tempCounter = 0
     print("For best results, put the competitors in order of the highest seed to the lowest seed.")
-    competitorDict = dict({})
+    competitorDict = {
+        "tournamentType": "Single Elimination"
+    }
     while tempCounter < competitorQuantity:
         tempCounter = tempCounter+1
         if useDummyData == True:
-            tempNameHolder = tempCounter
+            tempNameHolder = str(tempCounter)
         else:
             tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
         competitorNames.append(tempNameHolder)
@@ -160,20 +162,7 @@ if roundNumber == 0:
     match seedingMethod:
         case 1:
             #returns order the competitors were put in
-            while listPos < competitorQuantity:
-              listPos = listPos+1
-              dictSection = {
-                "position": listPos,
-                "seed": listPos,
-                "lastRound": 1,
-                "name": competitorNames[listPos-1],
-                "propagandaTitle": propagandaTitles[listPos-1],
-                "propaganda":[
-                    "(no propaganda submitted)"
-                    ]
-                }
-              competitorDict["competitor"+str(listPos)] = dictSection
-            finalOrder=competitorNames
+            finalSeedList = seedList
         case 2:
             #returns the competitors in a random order
             finalSeedList = []
@@ -182,20 +171,6 @@ if roundNumber == 0:
                 randomCompetitor = random.choice(seedList)
                 seedList.remove(randomCompetitor)
                 finalSeedList.append(randomCompetitor)
-            while listPos < competitorQuantity:
-                listPos = listPos+1
-                finalOrder.append([int(finalSeedList[listPos-1])])
-                dictSection = {
-                "position": listPos,
-                "seed": finalSeedList[listPos-1],
-                "lastRound": 1,
-                "name": competitorNames[int(finalSeedList[listPos-1]-1)],
-                "propagandaTitle": propagandaTitles[int(finalSeedList[listPos-1]-1)],
-                "propaganda":[
-                    "(no propaganda submitted)"
-                    ]
-                }
-                competitorDict["competitor"+str(listPos)] = dictSection
         case 3:
             #implements what I beleive to be standard seeding, where the 1st seed goes against the last seed and the 2nd seed goes against the 2nd lst seed and so on
             constructedSeedList = [1, 2]
@@ -210,31 +185,15 @@ if roundNumber == 0:
                     for y in matchupList[x]:
                         constructedSeedList.append(y)
             finalSeedList = constructedSeedList
-            finalOrder = []
-            for x in range(len(finalSeedList)):
-                finalOrder.append(competitorNames[int(finalSeedList[x]-1)])
-                dictSection = {
-                "position": x+1,
-                "seed": finalSeedList[x],
-                "lastRound": 1,
-                "name": competitorNames[int(finalSeedList[x]-1)],
-                "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
-                "propaganda":[
-                    "(no propaganda submitted)"
-                    ]
-                }
-                competitorDict["competitor"+str(x+1)] = dictSection
-
         case 4:
             # Randomised cohort seeding
-            # Sets up cohort 1
             cohorts ={
-                "cohort1": []
+                1: []
             }
             cohortAmount = int(math.log2(competitorQuantity))
             tempCounter = 0
             while tempCounter < 2:
-                cohorts["cohort1"].append(seedList[tempCounter])
+                cohorts[1].append(seedList[tempCounter])
                 tempCounter = tempCounter + 1
             tempCounter = 1
             listPos = 2
@@ -248,77 +207,46 @@ if roundNumber == 0:
                     cohortCounter = cohortCounter + 1
                     cohortSeedList.append(seedList[listPos])
                     listPos=listPos+1
-                cohorts["cohort"+str(tempCounter)] = cohortSeedList
-            print(str(cohorts))
+                cohorts[tempCounter] = cohortSeedList
             #logic for seeding based on cohorts
-            availablePositions = []
-            cohortPosition = []
-            tempCounter = 0
-            while tempCounter < competitorQuantity:
-                tempCounter = tempCounter + 1
-                availablePositions.append(tempCounter)
-                cohortPosition.append(-1)
-            tempCounter = len(cohorts)
-            while len(availablePositions) > 4:
-                # for each cohort over cohort 2
-                useThisPosition = False
-                cohortCounter = 0
-                while True:
-                    try:
-                        print(cohortCounter, useThisPosition)
-                        if useThisPosition == True:
-                            useThisPosition = False
-                            cohortPosition[availablePositions[cohortCounter]-1] = "cohort"+str(tempCounter)
-                            availablePositions[cohortCounter] = -1
-                        else:
-                            useThisPosition = True
-                        cohortCounter = cohortCounter + 1
-                    except IndexError:
-                        break
-                removalcount = 0
-                while True:
-                    print("Removed "+str(removalcount)+" occupied positions!")
-                    if -1 in availablePositions:
-                        removalcount = removalcount + 1
-                        availablePositions.remove(-1)
-                    else:
-                        break
-                print("Finished assigning positions to cohort"+str(tempCounter))
-                tempCounter = tempCounter - 1
-                print(availablePositions)
-                print(cohortPosition)
-            # for cohorts 1 and 2
-            cohortPosition[availablePositions[0]-1] = "cohort1"
-            cohortPosition[availablePositions[1]-1] = "cohort2"
-            cohortPosition[availablePositions[2]-1] = "cohort1"
-            cohortPosition[availablePositions[3]-1] = "cohort2"
-            print(availablePositions)
-            print(cohortPosition)
-            # creating the final order
+            cohortPositions = [1, 1]
+            iteration = 0
+            while len(cohortPositions) < competitorQuantity:
+                iteration = iteration+1
+                print("Cohort Positions:", cohortPositions)
+                cohortMatchupList = []
+                for x in cohortPositions:
+                    cohortMatchupList.append([x, iteration+1])
+                cohortPositions = []
+                print("Cohort Matchups:", cohortMatchupList)
+                for x in range(len(cohortMatchupList)):
+                    for y in cohortMatchupList[x]:
+                        cohortPositions.append(y)
+            print(cohortPositions)
             finalSeedList = []
-            finalOrder = []
-            tempCounter = 0
-            for x in range(len(cohortPosition)):
-                randomCohortMember = random.choice(cohorts[str(cohortPosition[x])])
-                cohorts[cohortPosition[x]].remove(randomCohortMember)
-                finalSeedList.append(randomCohortMember)
-                finalOrder.append(competitorNames[int(randomCohortMember-1)])
-            for x in range(len(finalSeedList)):
-                dictSection = {
-                "position": x+1,
-                "seed": finalSeedList[x],
-                "lastRound": 1,
-                "name": competitorNames[int(finalSeedList[x]-1)],
-                "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
-                "propaganda":[
-                    "(no propaganda submitted)"
-                    ]
-                }
-                competitorDict["competitor"+str(x+1)] = dictSection
+            for x in range(len(cohortPositions)):
+                randomCompetitor = random.choice(cohorts[cohortPositions[x]])
+                cohorts[cohortPositions[x]].remove(randomCompetitor)
+                finalSeedList.append(randomCompetitor)
         case _:
             # catch-all
             print("I haven't done that yet :(")
     # save data to json file
+    finalOrder = []
+    for x in range(len(finalSeedList)):
+            startRound = 1
+            dictSection = {
+            "position": x+1,
+            "seed": finalSeedList[x],
+            "lastRound": startRound,
+            "name": competitorNames[int(finalSeedList[x]-1)],
+            "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
+            "propaganda":[
+                "(no propaganda submitted)"
+                ]
+            }
+            competitorDict["competitor"+str(x+1)] = dictSection
+            finalOrder.append(competitorNames[int(finalSeedList[x]-1)])
     competitorList = json.dumps(competitorDict, indent=2)
     f = open("tourny_data.json", "w")
     f.write(competitorList+"\n")
@@ -335,7 +263,7 @@ else:
         competitorList = json.load(f)
         f.close()
         # (getting how many competitors there are)
-        competitorQuantity = len(competitorList)
+        competitorQuantity = len(competitorList)-1
         totalRounds = math.log(competitorQuantity, 2)
         print("Here's all the competitors that made it to round "+str(roundNumber)+":")
         # finding all the competitors that made it to whatever round and printing a list
@@ -482,11 +410,11 @@ else:
                         client.create_post(
                             blogname=clientInfo["postedBlog"],
                             state = postMethod,
-                            tags=["round "+str(roundNumber), "tumblr tournament", "polls"],
+                            tags=["round "+str(roundNumber), "tumblr tournament", "polls", "gimmick blog"],
                             content=contentFormat,
                             layout=postLayout
                         )
-                        print(finalOrder[tempCounter - 2]+" vs. "+finalOrder[tempCounter - 1]+"\n")
+                        print(str(finalOrder[tempCounter - 2])+" vs. "+str(finalOrder[tempCounter - 1])+"\n")
                     break
                 case "2":
                     # updating matchup
@@ -540,9 +468,9 @@ else:
                     print(maxNameLength)
                     #setting up dimensions for image
                     centerNodeOffset = int(totalRounds)
-                    lengthPerCharacterSize = 10
-                    fontSize = int(2*lengthPerCharacterSize)
-                    lineWidth = 5
+                    lengthPerCharacterSize = 8
+                    fontSize = int(2.5*lengthPerCharacterSize)
+                    lineWidth = 4
                     deadspaceWidth = lineWidth*4
                     pointRadius=lineWidth*2
                     verticalCompetitorSpacing = 2*lengthPerCharacterSize
@@ -585,6 +513,7 @@ else:
                                         "layer": layer,
                                         "posInLayer": levelNodeCounter[layer]
                                     }
+                                    svgMarkup += f'<circle cx="{possibleXPositions[2*x]}" cy="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" r="{pointRadius}" fill="black" />\n'
                                 else:
                                     relevantNodes[universalNodeID] = {
                                         "xPos": 2*x,
@@ -597,10 +526,6 @@ else:
                                 nodesToSkip = pow(2, layer+1) - 1
                             else:
                                 nodesToSkip = nodesToSkip - 1
-                    # putting dots on relevant bits
-                    for x in range(len(relevantNodes)):
-                        node = relevantNodes[x]
-                        svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
                     # sorting through that ungodly list and returning which nodes are at each layer
                     nodesSortedByLayer = []
                     for x in range(maxLevel):
@@ -620,18 +545,20 @@ else:
                             if len(currentLayerNodes) > 2:
                                 nextNode = relevantNodes[nextLayer[math.floor(y/2)]]
                             else:
-                                nextNode = relevantNodes[competitorQuantity -1]
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[currentNode["xPos"]+1]}" y2="{possibleYPositions[currentNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]+1]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[nextNode["xPos"]]}" y2="{possibleYPositions[nextNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                                finalNodeList = nodesSortedByLayer[maxLevel-1]
+                                nextNode = relevantNodes[finalNodeList[0]]
+                            svgMarkup += f'<circle cx="{possibleXPositions[currentNode["xPos"]]}" cy="{possibleYPositions[currentNode["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                            svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[currentNode["xPos"]+1]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
                         rightNodes = currentLayerNodes[int(len(currentLayerNodes)/2):len(currentLayerNodes)]
                         for y in range(len(rightNodes)):
                             currentNode = relevantNodes[rightNodes[y]]
                             if len(currentLayerNodes) > 2:
                                 nextNode = relevantNodes[nextLayer[math.floor((y+len(leftNodes))/2)]]
                             else:
-                                nextNode = relevantNodes[competitorQuantity-1]
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[currentNode["xPos"]-1]}" y2="{possibleYPositions[currentNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]-1]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[nextNode["xPos"]]}" y2="{possibleYPositions[nextNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                                finalNodeList = nodesSortedByLayer[maxLevel-1]
+                                nextNode = relevantNodes[finalNodeList[0]]
+                            svgMarkup += f'<circle cx="{possibleXPositions[currentNode["xPos"]]}" cy="{possibleYPositions[currentNode["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                            svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[currentNode["xPos"]-1]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
                     #drawing lines for winner's "podium"
                     svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
                     svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)+1]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
@@ -653,7 +580,7 @@ else:
                         print("Relevant nodes of the current round", len(currentRoundNodes), currentRoundNodes)
                         # getting a list of all competitors in the current round
                         currentRoundCompetitorNames = []
-                        for y in range(len(competitorList)):
+                        for y in range(len(competitorList)-1):
                             competitor = competitorList["competitor"+str(y+1)]
                             if competitor["lastRound"] >= x+1:
                                 currentRoundCompetitorNames.append(competitor["name"])
