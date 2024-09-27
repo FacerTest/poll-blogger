@@ -1,7 +1,7 @@
 # Howdy!
 # If you're trying to improve my code, I am so very sorry :(
 
-useDummyData = True
+useDummyData = False
 
 import json
 import random
@@ -130,11 +130,13 @@ if roundNumber == 0:
             print("That's not an option!")
     tempCounter = 0
     print("For best results, put the competitors in order of the highest seed to the lowest seed.")
-    competitorDict = dict({})
+    competitorDict = {
+        "tournamentType": "Single Elimination"
+    }
     while tempCounter < competitorQuantity:
         tempCounter = tempCounter+1
         if useDummyData == True:
-            tempNameHolder = tempCounter
+            tempNameHolder = str(tempCounter)
         else:
             tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
         competitorNames.append(tempNameHolder)
@@ -261,7 +263,7 @@ else:
         competitorList = json.load(f)
         f.close()
         # (getting how many competitors there are)
-        competitorQuantity = len(competitorList)
+        competitorQuantity = len(competitorList)-1
         totalRounds = math.log(competitorQuantity, 2)
         print("Here's all the competitors that made it to round "+str(roundNumber)+":")
         # finding all the competitors that made it to whatever round and printing a list
@@ -412,7 +414,7 @@ else:
                             content=contentFormat,
                             layout=postLayout
                         )
-                        print(finalOrder[tempCounter - 2]+" vs. "+finalOrder[tempCounter - 1]+"\n")
+                        print(str(finalOrder[tempCounter - 2])+" vs. "+str(finalOrder[tempCounter - 1])+"\n")
                     break
                 case "2":
                     # updating matchup
@@ -511,6 +513,7 @@ else:
                                         "layer": layer,
                                         "posInLayer": levelNodeCounter[layer]
                                     }
+                                    svgMarkup += f'<circle cx="{possibleXPositions[2*x]}" cy="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" r="{pointRadius}" fill="black" />\n'
                                 else:
                                     relevantNodes[universalNodeID] = {
                                         "xPos": 2*x,
@@ -523,10 +526,6 @@ else:
                                 nodesToSkip = pow(2, layer+1) - 1
                             else:
                                 nodesToSkip = nodesToSkip - 1
-                    # putting dots on relevant bits
-                    for x in range(len(relevantNodes)):
-                        node = relevantNodes[x]
-                        svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
                     # sorting through that ungodly list and returning which nodes are at each layer
                     nodesSortedByLayer = []
                     for x in range(maxLevel):
@@ -546,18 +545,20 @@ else:
                             if len(currentLayerNodes) > 2:
                                 nextNode = relevantNodes[nextLayer[math.floor(y/2)]]
                             else:
-                                nextNode = relevantNodes[competitorQuantity -1]
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[currentNode["xPos"]+1]}" y2="{possibleYPositions[currentNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]+1]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[nextNode["xPos"]]}" y2="{possibleYPositions[nextNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                                finalNodeList = nodesSortedByLayer[maxLevel-1]
+                                nextNode = relevantNodes[finalNodeList[0]]
+                            svgMarkup += f'<circle cx="{possibleXPositions[currentNode["xPos"]]}" cy="{possibleYPositions[currentNode["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                            svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[currentNode["xPos"]+1]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
                         rightNodes = currentLayerNodes[int(len(currentLayerNodes)/2):len(currentLayerNodes)]
                         for y in range(len(rightNodes)):
                             currentNode = relevantNodes[rightNodes[y]]
                             if len(currentLayerNodes) > 2:
                                 nextNode = relevantNodes[nextLayer[math.floor((y+len(leftNodes))/2)]]
                             else:
-                                nextNode = relevantNodes[competitorQuantity-1]
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[currentNode["xPos"]-1]}" y2="{possibleYPositions[currentNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                            svgMarkup += f'<line x1="{possibleXPositions[currentNode["xPos"]-1]}" y1="{possibleYPositions[currentNode["yPos"]]}" x2="{possibleXPositions[nextNode["xPos"]]}" y2="{possibleYPositions[nextNode["yPos"]]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                                finalNodeList = nodesSortedByLayer[maxLevel-1]
+                                nextNode = relevantNodes[finalNodeList[0]]
+                            svgMarkup += f'<circle cx="{possibleXPositions[currentNode["xPos"]]}" cy="{possibleYPositions[currentNode["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                            svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[currentNode["xPos"]-1]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
                     #drawing lines for winner's "podium"
                     svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
                     svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)+1]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
@@ -579,7 +580,7 @@ else:
                         print("Relevant nodes of the current round", len(currentRoundNodes), currentRoundNodes)
                         # getting a list of all competitors in the current round
                         currentRoundCompetitorNames = []
-                        for y in range(len(competitorList)):
+                        for y in range(len(competitorList)-1):
                             competitor = competitorList["competitor"+str(y+1)]
                             if competitor["lastRound"] >= x+1:
                                 currentRoundCompetitorNames.append(competitor["name"])
