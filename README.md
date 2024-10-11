@@ -1,7 +1,7 @@
 # poll-blogger
 A python program that sets up and runs single elimination tournaments on Tumblr with (hopefully) minimal human tedium
 
-**THIS VERSION IS IN ACTIVE DEVELOPMENT!** 
+**THIS VERSION IS IN ACTIVE DEVELOPMENT! DON'T EXPECT ANYTHING TO NECESSARILY WORK!**
 
 **it is currently impossible to input competitor propaganda through the program**; you have to edit the competitor JSON file. I have no intention to add this feature, so someone else will have to if they want it.
 
