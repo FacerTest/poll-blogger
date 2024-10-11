@@ -174,15 +174,46 @@ if roundNumber < 0:
     #            print('Type one of the options, please.')
     print("For best results, put the competitors in order of the highest seed to the lowest seed.")
     propagandaPlaceholder = "(no propaganda submitted)"
+    seedList = []
+    for x in range(competitorQuantity):
+        seedList.append(x+1)
+    # setting up byes
+    possibleFakeSeeds = []
+    if byes == 0:
+        possibleFakeSeedQuantity = competitorQuantity*2
+    else:
+        possibleFakeSeedQuantity = powerOf2UpperBound
+    for x in range(possibleFakeSeedQuantity):
+        possibleFakeSeeds.append(x+1)
+    print("possible fake seeds:", possibleFakeSeeds)
+    fakeSeeds = []
+    for x in possibleFakeSeeds:
+        if x not in seedList:
+            fakeSeeds.append(x)
+    print("fake seeds:", fakeSeeds)
+    if byes == 0:
+        safeSeeds = seedList
+    else:
+        safeSeeds = seedList[0:powerOf2LowerBound]
+    print("safe seeds:", safeSeeds)
+    unsafeSeeds = []
+    for x in seedList:
+        if x not in safeSeeds:
+            unsafeSeeds.append(x)
+    print("unsafe seeds:", unsafeSeeds)
     competitorDict = {
-        "tournamentSettings": {
+        "tournamentInfo": {
             "type": tournamentType,
             "useCompetitorImages": useCompetitorImages,
             "headerStyle": headerStyle,
             "headerText": headerText,
             "defaultPropaganda": propagandaPlaceholder,
             "pollQuestion": pollQuestion,
-            "pollTags": pollTags
+            "pollTags": pollTags,
+            "possibleFakeSeeds": possibleFakeSeeds,
+            "fakeSeeds": fakeSeeds,
+            "safeSeeds": safeSeeds,
+            "unsafeSeeds": unsafeSeeds,
         }
     }
     while tempCounter < competitorQuantity:
@@ -206,29 +237,6 @@ if roundNumber < 0:
         #            print("Type \"y\" or \"n\" please.")
         propagandaTitles.append(tempPropagandaTitle)
     listPos = 0
-    seedList = []
-    for x in range(competitorQuantity):
-        seedList.append(x+1)
-    # setting up byes
-    possibleFakeSeeds = []
-    for x in range(powerOf2UpperBound):
-        possibleFakeSeeds.append(x+1)
-    print("possible fake seeds:", possibleFakeSeeds)
-    fakeSeeds = []
-    for x in possibleFakeSeeds:
-        if x not in seedList:
-            fakeSeeds.append(x)
-    print("fake seeds:", fakeSeeds)
-    if byes == 0:
-        safeSeeds = seedList
-    else:
-        safeSeeds = seedList[0:powerOf2LowerBound]
-    print("safe seeds:", safeSeeds)
-    unsafeSeeds = []
-    for x in seedList:
-        if x not in safeSeeds:
-            unsafeSeeds.append(x)
-    print("unsafe seeds:", unsafeSeeds)
     match seedingMethod:
         case 1:
             #returns order the competitors were put in
@@ -382,7 +390,7 @@ else:
         # (getting how many competitors there are)
         competitorQuantity = len(competitorList)-1
         totalRounds = int(math.log(competitorQuantity, 2))
-        competitionSettings = competitorList["tournamentSettings"]
+        competitionSettings = competitorList["tournamentInfo"]
         competitionType = competitionSettings["type"]
         useCompetitorImages = competitionSettings["useCompetitorImages"]
         headerStyle = competitionSettings["headerStyle"]
@@ -391,48 +399,63 @@ else:
         propagandaPlaceholder = competitionSettings["defaultPropaganda"]
         pollQuestion = competitionSettings["pollQuestion"]
         pollTags = competitionSettings["pollTags"]
+        possibleFakeSeeds =competitionSettings["possibleFakeSeeds"]
+        fakeSeeds = competitionSettings["fakeSeeds"]
+        safeSeeds = competitionSettings["safeSeeds"]
+        unsafeSeeds = competitionSettings["unsafeSeeds"]
         
         # finding all the competitors that made it to whatever round and printing a list
-        print("Here's all the competitors that made it to round "+str(roundNumber)+":")
         finalOrder = []
         finalOrderPos = []
         finalSeedList = []
         originalSeedList = []
+        originalNameList = []
         round0Positions = []
         competitorCounter = 0
+        notByed = []
+        byes = 0
+        # finding bye info
+        for x in possibleFakeSeeds:
+            try:
+                dictSection = competitorList[f"competitor{x}"]
+                if dictSection["gotBye"] == True:
+                    print(f"competitor {x} has a bye!")
+                    byes = byes+1
+                    notByed.append(False)
+                else:
+                    print(f"competitor {x} exists and doesn't have a bye!")
+                    notByed.append(dictSection["name"])
+            except KeyError:
+                print(f"competitor {x} doesn't exist!")
+                notByed.append(False)
+        # finding info for current round
         while tempCounter < competitorQuantity:
             tempCounter = tempCounter + 1
             dictSection = competitorList["competitor"+str(tempCounter)]
             originalSeedList.append(dictSection["seed"])
+            originalNameList.append(dictSection["name"])
             if dictSection["lastRound"] >= roundNumber:
                 if roundNumber == 0:
                     gotBye = dictSection["gotBye"]
                     if gotBye == False:
                         competitorCounter = competitorCounter + 1
-                        print(str(competitorCounter)+". "+str(dictSection["name"]))
                         finalOrder.append(dictSection["name"])
                         finalOrderPos.append(dictSection["position"])
                         finalSeedList.append(dictSection["seed"])
-                        round0Positions.append(dictSection["position"])
                 else:
                     competitorCounter = competitorCounter + 1
-                    print(str(competitorCounter)+". "+str(dictSection["name"]))
                     finalOrder.append(dictSection["name"])
                     finalOrderPos.append(dictSection["position"])
                     finalSeedList.append(dictSection["seed"])
         currentRoundCompetitorQuantity = len(finalOrder)
+        print(f"Here are all the competitors that made it to round {roundNumber}:")
+        for x in range(currentRoundCompetitorQuantity):
+            print(f"{x+1}. {finalOrder[x]}")
         # Finding some more information
         powerOf2UpperBound = 1
         while powerOf2UpperBound < competitorQuantity:
             powerOf2LowerBound = powerOf2UpperBound
             powerOf2UpperBound = powerOf2UpperBound * 2
-        possibleFakeSeeds = []
-        for x in range(powerOf2UpperBound):
-            possibleFakeSeeds.append(x+1)
-        fakeSeeds = []
-        for x in possibleFakeSeeds:
-            if x not in originalSeedList:
-                fakeSeeds.append(x)
         # What comes after info is found
         while True:
             response = str(input("1. Post polls for these competitors\n2. Record results of this round\n3. Render chart for this round\n"))
@@ -636,93 +659,174 @@ else:
                     fontSize = int(2.5*lengthPerCharacterSize)
                     lineWidth = 4
                     deadspaceWidth = lineWidth*4
+                    possibleXPositions = [deadspaceWidth]
+                    possibleYPositions = [deadspaceWidth]
                     pointRadius=int(lineWidth*1.5)
                     verticalCompetitorSpacing = 2*lengthPerCharacterSize
                     if maxNameLength < 5:
                         horizontalCompetitorSpacing = 5*(lengthPerCharacterSize+2)
                     else:
                         horizontalCompetitorSpacing = (lengthPerCharacterSize+2)*maxNameLength
-                    imageHeight = (verticalCompetitorSpacing*(powerOf2UpperBound)) + 2*deadspaceWidth
-                    imageLength = 4*(horizontalCompetitorSpacing*(int(totalRounds)+1)) + 2*deadspaceWidth
-                    # setting up a grid where every possible matchup is on...
-                    possibleXPositions = [deadspaceWidth]
-                    possibleYPositions = [deadspaceWidth]
-                    for x in range(1,(4*(int(totalRounds)+1))+1):
-                        possibleXPositions.append(deadspaceWidth+(x*horizontalCompetitorSpacing))
-                    for x in range(1,int((powerOf2UpperBound))+1):
-                        possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
-                    imageCenterVertical = possibleYPositions[int(len(possibleYPositions)/2)]
-                    imageCenterHorizontal = possibleXPositions[int(len(possibleXPositions)/2)]
-                    svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
-                    # for reference. puts a dot at every single "possible position"
-                    for x in possibleXPositions:
-                        for y in possibleYPositions:
-                            svgMarkup += f'<circle cx="{x}" cy="{y}" r="5" fill="red" />\n'
-                    #setting up list of all competitors at various rounds
-                    normalRounds = []
-                    round0 = []
-                    print(round0Positions)
-                    for x in range(powerOf2UpperBound):
-                        round0.append(-1)
-                    for x in round0Positions:
-                        dictSection = competitorList[f"competitor{x}"]
-                        round0[x-1] = dictSection["seed"]
-                    for x in range(int(totalRounds)):
-                        currentRound = []
-                        for y in range(1, len(competitorList)):
-                            dictSection = competitorList[f"competitor{y}"]
-                            if roundNumber >= y:
-                                if dictSection["lastRound"] >= y:
-                                    currentRound.append(dictSection["seed"])
-                        normalRounds.append(currentRound)
-                    print(round0)
-                    print(normalRounds)
-                    #defining relevant nodes
-                    possiblyRelevantNodes = {}
-                    leftSide = True
-                    universalNodeID = 0
-                    maxLevel = int(len(possibleXPositions)/4)
-                    for x in range(int(len(possibleXPositions)/2)+1):
-                        layer = int(len(possibleXPositions)/4)-abs(x-int(len(possibleXPositions)/4))
-                        if layer == maxLevel:
-                            leftSide = False
-                        if leftSide == True:
-                            side = "left"
-                        else:
-                            side = "right"
-                        posInLayer = 0
-                        nodesToSkip = pow(2, layer)
-                        for y in range(int(len(possibleYPositions))):
-                            if nodesToSkip == 0:
-                                nodesToSkip = pow(2, layer+1) - 1
-                                if x == int(len(possibleXPositions)/4):
-                                    #checking if the node is the center node
-                                    possiblyRelevantNodes[universalNodeID] = {
-                                        "xPos": 2*x,
-                                        "yPos": int(len(possibleYPositions)/2)+centerNodeOffset,
-                                        "layer": layer,
-                                        "posInLayer": posInLayer,
-                                        "side": "middle",
-                                    }
-                                else:
-                                    possiblyRelevantNodes[universalNodeID] = {
-                                        "xPos": 2*x,
-                                        "yPos": y,
-                                        "layer": layer,
-                                        "posInLayer": posInLayer,
-                                        "side": side,
-                                    }
-                                universalNodeID = universalNodeID+1
-                                posInLayer = posInLayer + 1
+                    # there has to be a better way than two very similar cases... Oh well! That's a problem for later me!
+                    if byes == competitorQuantity:
+                        # if competitors are a perfect power of 2
+                        imageHeight = (2*verticalCompetitorSpacing*powerOf2UpperBound) + 2*deadspaceWidth
+                        imageLength = 4*(horizontalCompetitorSpacing*(int(totalRounds))) + 2*deadspaceWidth
+                        # setting up a grid where every possible matchup is on...
+                        for x in range(1,(4*(int(totalRounds)))+1):
+                            possibleXPositions.append(deadspaceWidth+(x*horizontalCompetitorSpacing))
+                        for x in range(1,int((2*competitorQuantity))+1):
+                            possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
+                        svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
+                        print("Rendering a bracket for a competitor amount that's a power of 2 isn't ready yet :(")
+                    else:
+                        # if they aren't
+                        imageHeight = (verticalCompetitorSpacing*(powerOf2UpperBound)) + 2*deadspaceWidth
+                        imageLength = 4*(horizontalCompetitorSpacing*(int(totalRounds+1))) + 2*deadspaceWidth
+                        # setting up a grid where every possible matchup is on...
+                        for x in range(1,(4*(int(totalRounds)+1))+1):
+                            possibleXPositions.append(deadspaceWidth+(x*horizontalCompetitorSpacing))
+                        for x in range(1,int((powerOf2UpperBound))+1):
+                            possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
+                        svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
+                        rounds = {
+                        0: notByed
+                        }
+                        for x in range(1, totalRounds+2):
+                            roundList = []
+                            if x <= roundNumber:
+                                for z in range(competitorQuantity):
+                                    dictSection=competitorList[f"competitor{z+1}"]
+                                    if dictSection["lastRound"] >= x:
+                                        roundList.append(dictSection["name"])
                             else:
-                                nodesToSkip = nodesToSkip - 1
-                    print(possiblyRelevantNodes)
-                    print(maxLevel)
-                    
-                    relevantNodes = {}
-                    for x in relevantNodes:
-                        node = relevantNodes[x]
-                        svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                                for y in range(competitorQuantity):
+                                    roundList.append("")
+                            rounds[x] = roundList
+                        print(rounds)
+                        #defining relevant nodes
+                        possiblyRelevantNodes = {}
+                        leftSide = True
+                        universalNodeID = 0
+                        posInLayer = []
+                        maxLevel = int(len(possibleXPositions)/4)
+                        for x in range(maxLevel+1):
+                            posInLayer.append(0)
+                        for x in range(int(len(possibleXPositions)/2)+1):
+                            layer = int(len(possibleXPositions)/4)-abs(x-int(len(possibleXPositions)/4))
+                            print(f"layer: {layer}")
+                            if layer == maxLevel:
+                                leftSide = False
+                            if leftSide == True:
+                                side = "left"
+                            else:
+                                side = "right"
+                            nodesToSkip = pow(2, layer)
+                            for y in range(int(len(possibleYPositions))):
+                                if nodesToSkip == 0:
+                                    nodesToSkip = pow(2, layer+1) - 1
+                                    if layer == maxLevel:
+                                        #checking if the node is the center node
+                                        possiblyRelevantNodes[universalNodeID] = {
+                                            "xPos": 2*x,
+                                            "yPos": int(len(possibleYPositions)/2)+centerNodeOffset,
+                                            "layer": maxLevel,
+                                            "posInLayer": posInLayer[layer],
+                                            "side": "middle",
+                                        }
+                                    else:
+                                        possiblyRelevantNodes[universalNodeID] = {
+                                            "xPos": 2*x,
+                                            "yPos": y,
+                                            "layer": layer,
+                                            "posInLayer": posInLayer[layer],
+                                            "side": side,
+                                        }
+                                    universalNodeID = universalNodeID+1
+                                    posInLayer[layer] = posInLayer[layer] + 1
+                                else:
+                                    nodesToSkip = nodesToSkip - 1
+                        for x in possiblyRelevantNodes:
+                            node = possiblyRelevantNodes[x]
+                            print(x, node)
+                        print(maxLevel)
+                        relevantNodes = {}
+                        for x in possiblyRelevantNodes:
+                            node = possiblyRelevantNodes[x]
+                            if node["layer"] == 0:
+                                if rounds[0][node["posInLayer"]] == False:
+                                    print(f"Excluded node {x} in layer 0 because it shouldn't exist!")
+                                else:
+                                    node["competitor"] = rounds[0][node["posInLayer"]]
+                                    relevantNodes[x] = node
+                            else:
+                                node["competitor"] = rounds[node["layer"]][node["posInLayer"]]
+                                relevantNodes[x] = node
+                        for x in relevantNodes:
+                            node = relevantNodes[x]
+                            print(x, node)
+                        for x in relevantNodes:
+                            node = possiblyRelevantNodes[x]
+                            svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                        # sorting nodes into side-based lists
+                        leftNodes = []
+                        centerNodes = []
+                        rightNodes = []
+                        for x in relevantNodes:
+                            node=relevantNodes[x]
+                            match node["side"]:
+                                case "left":
+                                    leftNodes.append(x)
+                                case "middle":
+                                    centerNodes.append(x)
+                                case "right":
+                                    centerNodes.append(x)
+                        # sorting nodes into a list by layer
+                        nodesByLayer = []
+                        for x in range(maxLevel+1):
+                            currentLayer = []
+                            for y in possiblyRelevantNodes:
+                                node = possiblyRelevantNodes[y]
+                                if node["layer"] == x:
+                                    currentLayer.append(y)
+                            nodesByLayer.append(currentLayer)
+                        print(nodesByLayer)
+                        # adding name and drawing lines
+                        svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                        svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)+1]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                        for x in range(len(nodesByLayer)-1):
+                            currentLayer = nodesByLayer[x]
+                            nextLayer = nodesByLayer[x+1]
+                            for y in range(len(currentLayer)):
+                                currentNodeID = currentLayer[y]
+                                try:
+                                    currentNode = relevantNodes[currentNodeID]
+                                    print(f"node {currentNodeID} does exist!")
+                                    nodeExists = True
+                                except KeyError:
+                                    nodeExists = False
+                                if nodeExists == True:
+                                    nextNodeID = nextLayer[math.floor(y/2)]
+                                    nextNode = relevantNodes[nextNodeID]
+                                    svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[int((currentNode["xPos"]+nextNode["xPos"])/2)]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
+                                    if currentNode["competitor"] == False:
+                                        textToRender = ""
+                                    else:
+                                        textToRender = currentNode["competitor"]
+                                    if currentNode["side"]=="left":
+                                        svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
+                                    if currentNode["side"]=="right":
+                                        svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]-1]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
+                                    if roundNumber > int(totalRounds):
+                                        competitionVictor = finalOrder[0]
+                                        svgMarkup += f'<text x="{possibleXPositions[int(len(possibleXPositions)/2)]}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
+                                else:
+                                    print(f"node {currentNodeID} does not exist!")
+                    # for reference. puts a dot at every single "possible position"
+                    #for x in possibleXPositions:
+                    #    for y in possibleYPositions:
+                    #        svgMarkup += f'<circle cx="{x}" cy="{y}" r="5" fill="red" />\n'
+                    #setting up list of all competitors at various rounds
                     # defining "relevant nodes," where each matchup actually happens
                     #maxLevel = 1 + int(len(possibleXPositions)/4)
                     #levelNodeCounter = []
