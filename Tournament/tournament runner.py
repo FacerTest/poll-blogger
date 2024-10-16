@@ -321,23 +321,47 @@ if roundNumber < 0:
         for x in intermediateSeedList:
             if x in fakeSeeds:
                 finalSeedList.remove(x)
-        seedsToNotBye = []
-        for x in unsafeSeeds:
-            seedsToNotBye.append(x)
-        unsafeSeedListPos = 0
-        while len(seedsToNotBye) < competitorQuantity-byes:
-            unsafeSeedToFind = unsafeSeeds[unsafeSeedListPos]
-            print(f"finding location of seed {unsafeSeedToFind}")
-            safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)-1
-            safeSeedToNotBye = finalSeedList[safeSeedCollateral]
-            print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
-            unsafeSeedListPos = unsafeSeedListPos - 1
-            seedsToNotBye.append(finalSeedList[safeSeedCollateral])
-        print("seeds to not bye:", seedsToNotBye)
-        seedsToBye = []
-        for x in seedList:
-            if x not in seedsToNotBye:
-                seedsToBye.append(x)
+        if seedingMethod in [3, 4, 5]:
+            seedsToNotBye = []
+            for x in unsafeSeeds:
+                seedsToNotBye.append(x)
+            unsafeSeedListPos = 0
+            while len(seedsToNotBye) < competitorQuantity-byes:
+                unsafeSeedToFind = unsafeSeeds[unsafeSeedListPos]
+                print(f"finding location of seed {unsafeSeedToFind}")
+                safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)-1
+                safeSeedToNotBye = finalSeedList[safeSeedCollateral]
+                print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
+                unsafeSeedListPos = unsafeSeedListPos - 1
+                seedsToNotBye.append(finalSeedList[safeSeedCollateral])
+            print("seeds to not bye:", seedsToNotBye)
+            seedsToBye = []
+            for x in seedList:
+                if x not in seedsToNotBye:
+                    seedsToBye.append(x)
+        if seedingMethod == 2:
+            seedsToNotBye = []
+            actuallyUnsafeSeeds = []
+            while len(actuallyUnsafeSeeds) < len(unsafeSeeds):
+                randomSeed = seedList[2*(random.randint(0, math.floor(len(seedList)/2)))]
+                if randomSeed not in actuallyUnsafeSeeds:
+                    actuallyUnsafeSeeds.append(randomSeed)
+                    seedsToNotBye.append(randomSeed)
+            print("unsafeseeds:", actuallyUnsafeSeeds)
+            unsafeSeedListPos = 0
+            while len(seedsToNotBye) < competitorQuantity-byes:
+                unsafeSeedToFind = actuallyUnsafeSeeds[unsafeSeedListPos]
+                print(f"finding location of seed {unsafeSeedToFind}")
+                safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)-1
+                safeSeedToNotBye = finalSeedList[safeSeedCollateral]
+                print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
+                unsafeSeedListPos = unsafeSeedListPos - 1
+                seedsToNotBye.append(finalSeedList[safeSeedCollateral])
+            print("seeds to not bye:", seedsToNotBye)
+            seedsToBye = []
+            for x in seedList:
+                if x not in seedsToNotBye:
+                    seedsToBye.append(x)
         print("seeds to bye:", seedsToBye)
     else:
         seedsToBye = []
@@ -427,19 +451,16 @@ else:
         notByed = []
         byes = 0
         # finding bye info
-        for x in range(powerOf2UpperBound):
-            try:
-                dictSection = competitorList[f"competitor{x+1}"]
-                if dictSection["gotBye"] == True:
-                    print(f"competitor {x} has a bye!")
-                    byes = byes+1
-                    notByed.append(False)
-                else:
-                    print(f"competitor {x} exists and doesn't have a bye!")
-                    notByed.append(dictSection["name"])
-            except KeyError:
-                print(f"competitor {x} doesn't exist!")
+        for x in range(len(competitorList)-1):
+            dictSection = competitorList[f"competitor{x+1}"]
+            if dictSection["gotBye"] == True:
+                print(f"competitor {x} has a bye!")
+                byes = byes+1
                 notByed.append(False)
+                notByed.append(False)
+            else:
+                print(f"competitor {x} exists and doesn't have a bye!")
+                notByed.append(dictSection["name"])
         # finding info for current round
         while tempCounter < competitorQuantity:
             tempCounter = tempCounter + 1
@@ -881,6 +902,7 @@ else:
                             node = possiblyRelevantNodes[x]
                             print(x, node)
                         print(maxLevel)
+                        print("max in each level:", posInLayer)
                         relevantNodes = {}
                         for x in possiblyRelevantNodes:
                             node = possiblyRelevantNodes[x]
