@@ -81,7 +81,7 @@ propagandaTitles = []
 while True:
     # getting what round it is
     try:
-        roundNumber = int(input("What round is is it?\n"))
+        roundNumber = int(input("What round is is it?\n(inputting a negative round will start a new competition)\n"))
         break
     except ValueError:
         print
