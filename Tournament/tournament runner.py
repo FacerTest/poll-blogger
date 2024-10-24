@@ -1,7 +1,7 @@
 # Howdy!
 # If you're trying to improve my code, I am so very sorry :(
 
-useDummyData = False
+useDummyData = True
 
 import json
 import random
@@ -384,7 +384,7 @@ if roundNumber < 0:
                     seedsToBye.append(x)
             unsafeSeeds = actuallyUnsafeSeeds
     else:
-        seedsToBye = []
+        seedsToBye = seedList
         finalSeedList = intermediateSeedList
     # saving various competition info
     competitorDict = {
@@ -721,8 +721,9 @@ else:
                             possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
                         svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
                         rounds = {
+                            0: originalSeedList
                         }
-                        for x in range(totalRounds+2):
+                        for x in range(1, totalRounds+2):
                             roundList = []
                             if x <= roundNumber:
                                 for z in range(competitorQuantity):
@@ -927,8 +928,11 @@ else:
                                     node["competitor"] = rounds[0][node["posInLayer"]]
                                     relevantNodes[x] = node
                             else:
-                                node["competitor"] = rounds[node["layer"]][node["posInLayer"]]
-                                relevantNodes[x] = node
+                                try:
+                                    node["competitor"] = rounds[node["layer"]][node["posInLayer"]]
+                                    relevantNodes[x] = node
+                                except IndexError:
+                                    print(f"Excluding node {x}!")
                         for x in relevantNodes:
                             node = relevantNodes[x]
                             print(x, node)
