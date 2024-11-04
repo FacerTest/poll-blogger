@@ -1,7 +1,7 @@
 # Howdy!
 # If you're trying to improve my code, I am so very sorry :(
 
-useDummyData = False
+useDummyData = True
 
 import json
 import random
@@ -14,6 +14,24 @@ except ModuleNotFoundError:
     print("You don't have pytumblr2 installed!")
     pytumblr2Installed = False
 import uuid
+
+def findFile(fileName, validFileLists):
+    fileExists = False
+    for fileType in validFileLists:
+        fileToFind = fileName+fileType
+        try:
+            open(fileToFind, "r")
+            fileExists = True
+            print(f"{fileToFind} exists!")
+            break
+        except FileNotFoundError:
+            print(f"File {fileName} doesn't have the {fileType} file extension!")
+    if fileExists == False:
+        ValidFileName = False
+    else:
+        ValidFileName = fileToFind
+    return ValidFileName
+validTumblrFileFormats = [".png", ".jpeg", ".webp", ".gif"]
 
 
 # saving credentials for pytumblr2...
@@ -141,42 +159,42 @@ if roundNumber < 0:
     pollQuestion = "Which competitor deserves to win this competition the most?"
     pollTags = ["tumblr tournament", "poll", "polls"]
     propagandaPlaceholder = "(no propaganda submitted)"
-    #while True:
-    #    response = input("Should there be competitor images in the posted polls? (y/n)\n")
-    #    match response:
-    #        case "y":
-    #            print("OK! Put images in the /images directory of wherever you have this python file!")
-    #            useCompetitorImages = True
-    #            needsImageDirectory = True
-    #            break
-    #        case "n":
-    #            print("OK! No competitor images will be used!")
-    #            useCompetitorImages = False
-    #            needsImageDirectory = False
-    #            break
-    #        case _:
-    #            print('Type "y" or "n," please.')
-    #while True:
-    #    response = input("What Should the header style be?\n1. No header\n2. Text\n3. Image\n")
-    #    match response:
-    #        case "1":
-    #            print("OK! there will be no header!")
-    #            headerStyle = "none"
-    #            headerText = False
-    #            break
-    #        case "2":
-    #            print("OK!")
-    #            headerStyle = "text"
-    #            headerText = input("What should the header say?\n")
-    #            break
-    #        case "3":
-    #            print("OK! Put the image you want to use in the /images directory of wherever you have this python file!")
-    #            headerStyle = "image"
-    #            headerText = False
-    #            needsImageDirectory = True
-    #            break
-    #        case _:
-    #            print('Type one of the options, please.')
+    while True:
+        response = input("Should there be competitor images in the posted polls? (y/n)\n")
+        match response:
+            case "y":
+                print("OK! Put images in the /images directory of wherever you have this python file!")
+                useCompetitorImages = True
+                needsImageDirectory = True
+                break
+            case "n":
+                print("OK! No competitor images will be used!")
+                useCompetitorImages = False
+                needsImageDirectory = False
+                break
+            case _:
+                print('Type "y" or "n," please.')
+    while True:
+        response = input("What Should the header style be?\n1. No header\n2. Text\n3. Image\n")
+        match response:
+            case "1":
+                print("OK! there will be no header!")
+                headerStyle = "none"
+                headerText = False
+                break
+            case "2":
+                print("OK!")
+                headerStyle = "text"
+                headerText = input("What should the header say?\n")
+                break
+            case "3":
+                print("OK! Put the image you want to use in the /images directory of wherever you have this python file!")
+                headerStyle = "image"
+                headerText = False
+                needsImageDirectory = True
+                break
+            case _:
+                print('Type one of the options, please.')
     print("For best results, put the competitors in order of the highest seed to the lowest seed.")
     seedList = []
     for x in range(competitorQuantity):
@@ -214,17 +232,6 @@ if roundNumber < 0:
             tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
         competitorNames.append(tempNameHolder)
         tempPropagandaTitle = tempNameHolder
-        #while True:
-        #    response = str(input("Should the title above the relevant propaganda be different? (y/n)\n"))
-        #    match response:
-        #        case "n":
-        #            tempPropagandaTitle = tempNameHolder
-        #            break
-        #        case "y":
-        #            tempPropagandaTitle = input("What should "+tempNameHolder+"'s title be?")
-        #            break
-        #        case _:
-        #            print("Type \"y\" or \"n\" please.")
         propagandaTitles.append(tempPropagandaTitle)
     listPos = 0
     match seedingMethod:
@@ -384,7 +391,7 @@ if roundNumber < 0:
                     seedsToBye.append(x)
             unsafeSeeds = actuallyUnsafeSeeds
     else:
-        seedsToBye = []
+        seedsToBye = seedList
         finalSeedList = intermediateSeedList
     # saving various competition info
     competitorDict = {
@@ -392,10 +399,13 @@ if roundNumber < 0:
             "type": tournamentType,
             "useCompetitorImages": useCompetitorImages,
             "headerStyle": headerStyle,
+            "headerAltText": False,
             "headerText": headerText,
             "defaultPropaganda": propagandaPlaceholder,
             "pollQuestion": pollQuestion,
             "pollTags": pollTags,
+            "extraAnswerQuantity": 0,
+            "extraAnswers": [],
             "byedSeeds": seedsToBye
         }
     }
@@ -415,9 +425,8 @@ if roundNumber < 0:
             "gotBye": gotBye,
             "name": competitorNames[int(finalSeedList[x]-1)],
             "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
-            "propaganda":[
-                propagandaPlaceholder
-                ]
+            "propaganda":[],
+            "altText": False
             }
             competitorDict["competitor"+str(x+1)] = dictSection
             finalOrder.append(competitorNames[int(finalSeedList[x]-1)])
@@ -446,9 +455,13 @@ else:
         headerStyle = competitionSettings["headerStyle"]
         if headerStyle == "text":
             headerText = competitionSettings["headerText"]
+        if headerStyle == "image":
+            headerAltText = competitionSettings["headerAltText"]
         propagandaPlaceholder = competitionSettings["defaultPropaganda"]
         pollQuestion = competitionSettings["pollQuestion"]
         pollTags = competitionSettings["pollTags"]
+        extraAnswerQuantity = competitionSettings["extraAnswerQuantity"]
+        extraAnswers = competitionSettings["extraAnswers"]
         # Finding some more information
         powerOf2UpperBound = 1
         while powerOf2UpperBound < competitorQuantity:
@@ -498,6 +511,7 @@ else:
         print(f"Here are all the competitors that made it to round {roundNumber}:")
         for x in range(currentRoundCompetitorQuantity):
             print(f"{x+1}. {finalOrder[x]}")
+        print("\n")
         # What comes after info is found
         while True:
             response = str(input("1. Post polls for these competitors\n2. Record results of this round\n3. Render chart for this round\n"))
@@ -511,142 +525,387 @@ else:
                         except ValueError:
                             print("That isn't a valid answer!")
                     while True:
-                        response = input("Do you want to post all of them? (y/n)\n")
-                        match response:
-                            case "y":
-                                tempCounter = 0
-                                finalCompetitorPosted = currentRoundCompetitorQuantity-1
-                                break
-                            case "n":
-                                while True:
-                                    try:
-                                    
-                                        tempCounter = 2*(int(input("Which poll should the first one posted? (1 is the first poll of this set)"))-1)
+                        try:
+                            firstMatchup = int(input(f"What poll do you want to start at?\n(poll 1 is the first poll of this round and poll {int(currentRoundCompetitorQuantity/2)} is the last.)\n"))
+                            lastMatchup = int(input(f"What poll do you want to end at?\n(poll 1 is the first poll of this round and poll {int(currentRoundCompetitorQuantity/2)} is the last.)\n"))
+                            validStartAndEndPoints = False
+                            if firstMatchup<=int(currentRoundCompetitorQuantity/2):
+                                if lastMatchup<=int(currentRoundCompetitorQuantity/2):
+                                    if firstMatchup<=lastMatchup:
                                         break
-                                    except ValueError:
-                                        print("That isn't a valid number!")
-                                while True:
-                                    try:
-                                        finalCompetitorPosted = 2*(int(input("Which poll should be the LAST one posted? ("+str(int(currentRoundCompetitorQuantity/2))+" is the last poll of this set)"))-1)
-                                        if finalCompetitorPosted < tempCounter:
-                                            print("Silly Billy! You can't have the last competitor be before the first one!")
-                                        else:
-                                            break
-                                    except ValueError:
-                                        print("Uh oh!")
-                                break
-                            case _:
-                                print("That's not a valid response!")
+                            print("Make sure that both bounds are in the amount of matchups there are, and that the final poll is after or the same as the first one!")
+                        except ValueError:
+                            print("try again!")
+
                     validAnswers = ["published","draft","queue"]
                     while True:
-                        postMethod = str(input("Should these posts be published, put in the drafts, or put in the queue?\n"))
+                        postMethod = str(input("Should these posts be published, saved as a draft, or put in the queue?\n"))
                         if postMethod in validAnswers:
-                            print("OK!")
                             break
                         else:
                             print("Type either \"published\", \"draft\", or \"queue\", please.")
-                    #prepares the format of polls to be posted
-                    while tempCounter <= finalCompetitorPosted:
-                        blockAmount = 3
-                        tempCounter = tempCounter+2
-                        dictSection = competitorList["competitor"+str(finalOrderPos[tempCounter-2])]
-                        competitorPropagandaTitle = dictSection["propagandaTitle"]
-                        competitorPropaganda = dictSection["propaganda"]
-                        propagandaHeadingFormat={
-                            "type": "text",
-                            "text": competitorPropagandaTitle,
-                            "subtype": "heading1"
-                        }
-                        contentFormat = [
+                    useAnyImages = False
+                    if headerStyle == "image":
+                        useAnyImages = True
+                    if useCompetitorImages == True:
+                        useAnyImages = True
+                    for x in range(firstMatchup-1, lastMatchup):
+                        matchupPos = 2*x
+                        topCompetitor = finalOrder[matchupPos]
+                        topCompetitorSeed=finalSeedList[matchupPos]
+                        bottomCompetitor = finalOrder[matchupPos+1]
+                        bottomCompetitorSeed = finalSeedList[matchupPos+1]
+                        topCompetitorPosition = originalSeedList.index(topCompetitorSeed)
+                        topCompetitorDict = competitorList[f"competitor{topCompetitorPosition+1}"]
+                        bottomCompetitorPosition = originalSeedList.index(bottomCompetitorSeed)
+                        bottomCompetitorDict = competitorList[f"competitor{bottomCompetitorPosition+1}"]
+                        print(f"Match {x+1}:\n{topCompetitor} vs. {bottomCompetitor}\n")
+                        # handling post layout
+                        postFormat = []
+                        match headerStyle:
+                            case "none":
+                                blocksBeforePoll = 0
+                                useHeaderImage = False
+                            case "text":
+                                blocksBeforePoll = 1
+                                useHeaderImage = False
+                                postFormat.append({
+                                    "type": "text",
+                                    "text": headerText,
+                                    "subtype": "heading1"
+                                })
+                            case "image":
+                                blocksBeforePoll = 1
+                                useHeaderImage = True
+                                if headerAltText == False:
+                                    postFormat.append({
+                                        "type":"image",
+                                        "media": [{
+                                            "type": "images/png",
+                                            "identifier": "heading"
+                                        }],
+                                    })
+                                else:
+                                    postFormat.append({
+                                        "type":"image",
+                                        "media": [{
+                                            "type": "images/png",
+                                            "identifier": "heading"
+                                        }],
+                                        "alt_text": headerAltText
+                                    })
+                        if useCompetitorImages == True:
+                            competitorImageBlocks = [blocksBeforePoll,blocksBeforePoll+1]
+                            blocksBeforePoll = blocksBeforePoll + 2
+                            if topCompetitorDict["altText"] == False:
+                                postFormat.append({
+                                        "type":"image",
+                                        "media": [{
+                                            "type": "images/png",
+                                            "identifier": "topcompetitor"
+                                        }]
+                                    })
+                            else:
+                                postFormat.append({
+                                        "type":"image",
+                                        "media": [{
+                                            "type": "images/png",
+                                            "identifier": "topcompetitor"
+                                        }],
+                                        "alt_text": headerAltText
+                                    })
+                            if bottomCompetitorDict["altText"] == False:
+                                postFormat.append({
+                                        "type":"image",
+                                        "media": [{
+                                            "type": "images/png",
+                                            "identifier": "bottomcompetitor"
+                                        }]
+                                    })
+                            else:
+                                postFormat.append({
+                                        "type":"image",
+                                        "media": [{
+                                            "type": "images/png",
+                                            "identifier": "bottomcompetitor"
+                                        }],
+                                        "alt_text": bottomCompetitorDict["altText"]
+                                    })
+                        else:
+                            competitorImageBlocks = False
+                        actualPollTags = [f"round {roundNumber}", f"{topCompetitor}", f"{bottomCompetitor}"]
+                        
+                        for y in pollTags:
+                            actualPollTags.append(y)
+                        
+                        pollOptions = [
                             {
-                                "type":"poll",
-                                "question": pollQuestion,
-                                "client_id": str(uuid.uuid4()),
-                                "answers":[
-                            {
-                                "answer_text":str(finalOrder[tempCounter - 2])
+                                "answer_text": topCompetitor
                             },
                             {
-                                "answer_text":str(finalOrder[tempCounter - 1])
+                                "answer_text": bottomCompetitor
                             }
-                        ],
-                        "settings":{
-                            "closed_status": "closed-after",
-                            "expire_after": pollTimeLength
-                        }
-                        }
                         ]
-                        pollTags = competitionSettings["pollTags"]
-                        pollTags.append(f"round {roundNumber}")
-                        pollTags.append(str(finalOrder[tempCounter - 2]))
-                        pollTags.append(str(finalOrder[tempCounter - 1]))
-                        # there has to be a better way to do this. but it's functional. oh well
-                        # this is getting the propaganda
-                        contentFormat.append(propagandaHeadingFormat)
-                        propagandaCounter = 0
-                        blockAmount = blockAmount+len(competitorPropaganda)
-                        while propagandaCounter < len(competitorPropaganda):
-                            propagandaSection = competitorPropaganda[propagandaCounter]
-                            if propagandaSection == propagandaPlaceholder:
-                                properganda = propagandaSection
-                            else:
-                                properganda = f"“{propagandaSection}”"
-                            paragraphFormat={
-                            "type": "text",
-                            "text": properganda,
+                        if extraAnswerQuantity > 0:
+                            for y in range(extraAnswerQuantity):
+                                pollOptions.append({
+                                    "answer_text": extraAnswers[y]
+                                })
+                        
+                        postFormat.append({
+                            "type": "poll",
+                            "question": pollQuestion,
+                            "client_id": str(uuid.uuid4()),
+                            "answers": pollOptions,
+                            "settings":{
+                                "closed_status": "closed-after",
+                                "expire_after": pollTimeLength
                             }
-                            contentFormat.append(paragraphFormat),
-                            propagandaCounter = propagandaCounter + 1
-                        dictSection = competitorList["competitor"+str(finalOrderPos[tempCounter-1])]
-                        competitorPropagandaTitle = dictSection["propagandaTitle"]
-                        competitorPropaganda = dictSection["propaganda"]
-                        propagandaHeadingFormat={
+                        })
+
+                        totalBlocks = blocksBeforePoll + 1
+                        # also, a reminder to myself... Since tumblr blocks start at 0 and it starts at 1, this "blocksBeforePoll" viariable is ALSO the block that the poll will be on.
+                        # setting up propaganda... there still has to be a better way than two very similar things run one after the other
+                        # for top competitor
+                        totalBlocks = totalBlocks+1
+                        postFormat.append({
                             "type": "text",
-                            "text": competitorPropagandaTitle,
-                            "subtype": "heading1"
-                        }
-                        contentFormat.append(propagandaHeadingFormat)
-                        propagandaCounter = 0
-                        blockAmount = blockAmount+len(competitorPropaganda)
-                        while propagandaCounter < len(competitorPropaganda):
-                            propagandaSection = competitorPropaganda[propagandaCounter]
-                            if propagandaSection == propagandaPlaceholder:
-                                properganda = propagandaSection
-                            else:
-                                properganda = f"“{propagandaSection}”"
-                            paragraphFormat={
+                            "text": topCompetitorDict["propagandaTitle"],
+                            "subtype": "heading2"
+                        })
+                        if len(topCompetitorDict["propaganda"])>0:
+                            for y in topCompetitorDict["propaganda"]:
+                                totalBlocks = totalBlocks+1
+                                postFormat.append({
+                                    "type": "text",
+                                    "text": f"“{y}”"
+                                })
+                        else:
+                            totalBlocks = totalBlocks+1
+                            postFormat.append({
+                                "type": "text",
+                                "text": propagandaPlaceholder
+                            })
+                        # for bottom competitor
+                        totalBlocks = totalBlocks+1
+                        postFormat.append({
                             "type": "text",
-                            "text": properganda,
-                            }
-                            contentFormat.append(paragraphFormat),
-                            propagandaCounter = propagandaCounter + 1
-                        blockCounter = 0
+                            "text": bottomCompetitorDict["propagandaTitle"],
+                            "subtype": "heading2"
+                        })
+                        if len(bottomCompetitorDict["propaganda"])>0:
+                            for y in bottomCompetitorDict["propaganda"]:
+                                totalBlocks = totalBlocks+1
+                                postFormat.append({
+                                    "type": "text",
+                                    "text": f"“{y}”"
+                                })
+                        else:
+                            totalBlocks = totalBlocks+1
+                            postFormat.append({
+                                "type": "text",
+                                "text": propagandaPlaceholder
+                            })
+                        # setting up post layout
+                        postDisplayBlocks = []
+                        if headerStyle == "none":
+                            currentBlock = 0
+                        else:
+                            postDisplayBlocks.append({"blocks": [0]})
+                            currentBlock = 1
+                        if useCompetitorImages == True:
+                            postDisplayBlocks.append({"blocks": competitorImageBlocks})
+                            currentBlock = competitorImageBlocks[-1]+1
+                        for y in range(currentBlock, totalBlocks):
+                            postDisplayBlocks.append({"blocks": [y]})
                         postLayout = [
                             {
                                 "type": "rows",
-                                "display":[],
-                                "truncate_after": 0
+                                "display": postDisplayBlocks,
+                                "truncate_after": blocksBeforePoll
                             }
                         ]
-                        while blockCounter < blockAmount:
-                            blockSection = {
-                                "blocks":[blockCounter]
-                            }
-                            layoutBlock = postLayout[0]
-                            blockBlock=layoutBlock["display"]
-                            blockBlock.append(blockSection)
-                            blockCounter = blockCounter+1
-                        #creates each poll
+                        # setting up media sources
+                        postMediaSources = {}
+                        if headerStyle == "image":
+                            headerFilePath = findFile("images/header", validTumblrFileFormats)
+                            if headerFilePath == False:
+                                print("There isn't a valid heading image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"heading\"\n3. Make sure that the heading image is a file type supported by Tumblr")
+                            else:
+                                postMediaSources["heading"] = headerFilePath
+                        if useCompetitorImages == True:
+                            topCompetitorFilePath = headerFilePath = findFile(f"images/{topCompetitorPosition+1}", validTumblrFileFormats)
+                            if topCompetitorFilePath == False:
+                                print(f"There isn't a valid image for competitor {topCompetitorPosition+1}... Attempting to use a placeholder image.")
+                                placeholderFilePath = headerFilePath = findFile("images/placeholder", validTumblrFileFormats)
+                                if placeholderFilePath == False:
+                                    print("There isn't a valid placeholder image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"placeholder\"\n3. Make sure that the heading image is a file type supported by Tumblr")
+                                else:
+                                    postMediaSources["topcompetitor"] = placeholderFilePath
+                            else:
+                                postMediaSources["topcompetitor"] = topCompetitorFilePath
+                            bottomCompetitorFilePath = headerFilePath = findFile(f"images/{bottomCompetitorPosition+1}", validTumblrFileFormats)
+                            if bottomCompetitorFilePath == False:
+                                print(f"There isn't a valid image for competitor {bottomCompetitorPosition+1}... Attempting to use a placeholder image.")
+                                placeholderFilePath = headerFilePath = findFile("images/placeholder", validTumblrFileFormats)
+                                if placeholderFilePath == False:
+                                    print("There isn't a valid placeholder image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"placeholder\"\n3. Make sure that the heading image is a file type supported by Tumblr")
+                                else:
+                                    postMediaSources["bottomcompetitor"] = placeholderFilePath
+                            else:
+                                postMediaSources["bottomcompetitor"] = bottomCompetitorFilePath
                         client.create_post(
-                            blogname=clientInfo["postedBlog"],
-                            state = postMethod,
-                            tags=pollTags,
-                            content=contentFormat,
-                            layout=postLayout
+                            blogname=postedBlog,
+                            tags= actualPollTags,
+                            state= postMethod,
+                            content = postFormat,
+                            layout = postLayout,
+                            media_sources = postMediaSources
                         )
-                        pollTags.remove(str(finalOrder[tempCounter - 2]))
-                        pollTags.remove(str(finalOrder[tempCounter - 1]))
-                        print(str(finalOrder[tempCounter - 2])+" vs. "+str(finalOrder[tempCounter - 1])+"\n")
+
+                    #while True:
+                    #    try:
+                    #        pollTimeLength = int(input("How many seconds should the polls run for?\n604800 (7 days) is the max value and 86400 (1 day) is the minimum\n"))
+                    #        break
+                    #    except ValueError:
+                    #        print("That isn't a valid answer!")
+                    #while True:
+                    #    response = input("Do you want to post all of them? (y/n)\n")
+                    #    match response:
+                    #        case "y":
+                    #            tempCounter = 0
+                    #            finalCompetitorPosted = currentRoundCompetitorQuantity-1
+                    #            break
+                    #        case "n":
+                    #            while True:
+                    #                try:
+                    #                
+                    #                    tempCounter = 2*(int(input("Which poll should the first one posted? (1 is the first poll of this set)"))-1)
+                    #                    break
+                    #                except ValueError:
+                    #                    print("That isn't a valid number!")
+                    #            while True:
+                    #                try:
+                    #                    finalCompetitorPosted = 2*(int(input("Which poll should be the LAST one posted? ("+str(int(currentRoundCompetitorQuantity/2))+" is the last poll of this set)"))-1)
+                    #                    if finalCompetitorPosted < tempCounter:
+                    #                        print("Silly Billy! You can't have the last competitor be before the first one!")
+                    #                    else:
+                    #                        break
+                    #                except ValueError:
+                    #                    print("Uh oh!")
+                    #            break
+                    #        case _:
+                    #            print("That's not a valid response!")
+                    #validAnswers = ["published","draft","queue"]
+                    #while True:
+                    #    postMethod = str(input("Should these posts be published, put in the drafts, or put in the queue?\n"))
+                    #    if postMethod in validAnswers:
+                    #        print("OK!")
+                    #        break
+                    #    else:
+                    #        print("Type either \"published\", \"draft\", or \"queue\", please.")
+                    #prepares the format of polls to be posted
+                    #while tempCounter <= finalCompetitorPosted:
+                    #    blockAmount = 3
+                    #    tempCounter = tempCounter+2
+                    #    dictSection = competitorList["competitor"+str(finalOrderPos[tempCounter-2])]
+                    #    competitorPropagandaTitle = dictSection["propagandaTitle"]
+                    #    competitorPropaganda = dictSection["propaganda"]
+                    #    propagandaHeadingFormat={
+                    #        "type": "text",
+                    #        "text": competitorPropagandaTitle,
+                    #        "subtype": "heading1"
+                    #    }
+                    #    contentFormat = [
+                    #        {
+                    #            "type":"poll",
+                    #            "question": pollQuestion,
+                    #            "client_id": str(uuid.uuid4()),
+                    #            "answers":[
+                    #        {
+                    #            "answer_text":str(finalOrder[tempCounter - 2])
+                    #        },
+                    #        {
+                    #            "answer_text":str(finalOrder[tempCounter - 1])
+                    #        }
+                    #    ],
+                    #    "settings":{
+                    #        "closed_status": "closed-after",
+                    #        "expire_after": pollTimeLength
+                    #    }
+                    #    }
+                    #    ]
+                    #    pollTags = competitionSettings["pollTags"]
+                    #    pollTags.append(f"round {roundNumber}")
+                    #    pollTags.append(str(finalOrder[tempCounter - 2]))
+                    #    pollTags.append(str(finalOrder[tempCounter - 1]))
+                        # there has to be a better way to do this. but it's functional. oh well
+                        # this is getting the propaganda
+                    #    contentFormat.append(propagandaHeadingFormat)
+                    #    propagandaCounter = 0
+                    #    blockAmount = blockAmount+len(competitorPropaganda)
+                    #    while propagandaCounter < len(competitorPropaganda):
+                    #        propagandaSection = competitorPropaganda[propagandaCounter]
+                    #        if propagandaSection == propagandaPlaceholder:
+                    #            properganda = propagandaSection
+                    #        else:
+                    #            properganda = f"“{propagandaSection}”"
+                    #        paragraphFormat={
+                    #        "type": "text",
+                    #        "text": properganda,
+                    #        }
+                    #        contentFormat.append(paragraphFormat),
+                    #        propagandaCounter = propagandaCounter + 1
+                    #    dictSection = competitorList["competitor"+str(finalOrderPos[tempCounter-1])]
+                    #    competitorPropagandaTitle = dictSection["propagandaTitle"]
+                    #    competitorPropaganda = dictSection["propaganda"]
+                    #    propagandaHeadingFormat={
+                    #        "type": "text",
+                    #        "text": competitorPropagandaTitle,
+                    #        "subtype": "heading1"
+                    #    }
+                    #    contentFormat.append(propagandaHeadingFormat)
+                    #    propagandaCounter = 0
+                    #    blockAmount = blockAmount+len(competitorPropaganda)
+                    #    while propagandaCounter < len(competitorPropaganda):
+                    #        propagandaSection = competitorPropaganda[propagandaCounter]
+                    #        if propagandaSection == propagandaPlaceholder:
+                    #            properganda = propagandaSection
+                    #        else:
+                    #            properganda = f"“{propagandaSection}”"
+                    #        paragraphFormat={
+                    #        "type": "text",
+                    #        "text": properganda,
+                    #        }
+                    ##        contentFormat.append(paragraphFormat),
+                    #        propagandaCounter = propagandaCounter + 1
+                    #    blockCounter = 0
+                    #    postFormat = [
+                    #        {
+                    #            "type": "rows",
+                    #            "display":[],
+                    #            "truncate_after": 0
+                    #        }
+                    #    ]
+                    #    while blockCounter < blockAmount:
+                    #        blockSection = {
+                    #            "blocks":[blockCounter]
+                    #        }
+                    #        layoutBlock = postFormat[0]
+                    #        blockBlock=layoutBlock["display"]
+                    #        blockBlock.append(blockSection)
+                    #        blockCounter = blockCounter+1
+                        #creates each poll
+                    #    client.create_post(
+                    #        blogname=clientInfo["postedBlog"],
+                    #        state = postMethod,
+                    #        tags=pollTags,
+                    #        content=contentFormat,
+                    #        layout=postFormat
+                    #    )
+                    #    pollTags.remove(str(finalOrder[tempCounter - 2]))
+                    #    pollTags.remove(str(finalOrder[tempCounter - 1]))
+                    #    print(str(finalOrder[tempCounter - 2])+" vs. "+str(finalOrder[tempCounter - 1])+"\n")
                     break
                 case "2":
                     # updating matchup
@@ -721,8 +980,9 @@ else:
                             possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
                         svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
                         rounds = {
+                            0: originalSeedList
                         }
-                        for x in range(totalRounds+2):
+                        for x in range(1, totalRounds+2):
                             roundList = []
                             if x <= roundNumber:
                                 for z in range(competitorQuantity):
@@ -927,8 +1187,11 @@ else:
                                     node["competitor"] = rounds[0][node["posInLayer"]]
                                     relevantNodes[x] = node
                             else:
-                                node["competitor"] = rounds[node["layer"]][node["posInLayer"]]
-                                relevantNodes[x] = node
+                                try:
+                                    node["competitor"] = rounds[node["layer"]][node["posInLayer"]]
+                                    relevantNodes[x] = node
+                                except IndexError:
+                                    print(f"Excluding node {x}!")
                         for x in relevantNodes:
                             node = relevantNodes[x]
                             print(x, node)
