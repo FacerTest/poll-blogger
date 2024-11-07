@@ -399,7 +399,7 @@ if roundNumber < 0:
             "type": tournamentType,
             "useCompetitorImages": useCompetitorImages,
             "headerStyle": headerStyle,
-            "headerAltText": False,
+            "headerImageAltText": False,
             "headerText": headerText,
             "defaultPropaganda": propagandaPlaceholder,
             "pollQuestion": pollQuestion,
@@ -456,7 +456,7 @@ else:
         if headerStyle == "text":
             headerText = competitionSettings["headerText"]
         if headerStyle == "image":
-            headerAltText = competitionSettings["headerAltText"]
+            headerAltText = competitionSettings["headerImageAltText"]
         propagandaPlaceholder = competitionSettings["defaultPropaganda"]
         pollQuestion = competitionSettings["pollQuestion"]
         pollTags = competitionSettings["pollTags"]
@@ -511,10 +511,10 @@ else:
         print(f"Here are all the competitors that made it to round {roundNumber}:")
         for x in range(currentRoundCompetitorQuantity):
             print(f"{x+1}. {finalOrder[x]}")
-        print("\n")
+        print("")
         # What comes after info is found
         while True:
-            response = str(input("1. Post polls for these competitors\n2. Record results of this round\n3. Render chart for this round\n"))
+            response = str(input("1. Post polls for these competitors\n2. Record results of this round\n3. Render chart for this round\n4. Edit tournament and competitor data\n"))
             match response:
                 case "1":
                     # posting polls for existing matchup
@@ -537,13 +537,20 @@ else:
                         except ValueError:
                             print("try again!")
 
-                    validAnswers = ["published","draft","queue"]
                     while True:
-                        postMethod = str(input("Should these posts be published, saved as a draft, or put in the queue?\n"))
-                        if postMethod in validAnswers:
-                            break
-                        else:
-                            print("Type either \"published\", \"draft\", or \"queue\", please.")
+                        response = input("What should happen to these polls?\n1. Immediately publish them\n2. Save them as drafts\n3. Put them in the queue\n")
+                        match response:
+                            case "1":
+                                postMethod = "published"
+                                break
+                            case "2":
+                                postMethod = "draft"
+                                break
+                            case "3":
+                                postMethod = "queue"
+                                break
+                            case _:
+                                print("Type the number for a valid option, please!")
                     useAnyImages = False
                     if headerStyle == "image":
                         useAnyImages = True
@@ -612,7 +619,7 @@ else:
                                             "type": "images/png",
                                             "identifier": "topcompetitor"
                                         }],
-                                        "alt_text": headerAltText
+                                        "alt_text": topCompetitorDict["altText"]
                                     })
                             if bottomCompetitorDict["altText"] == False:
                                 postFormat.append({
@@ -762,150 +769,6 @@ else:
                             layout = postLayout,
                             media_sources = postMediaSources
                         )
-
-                    #while True:
-                    #    try:
-                    #        pollTimeLength = int(input("How many seconds should the polls run for?\n604800 (7 days) is the max value and 86400 (1 day) is the minimum\n"))
-                    #        break
-                    #    except ValueError:
-                    #        print("That isn't a valid answer!")
-                    #while True:
-                    #    response = input("Do you want to post all of them? (y/n)\n")
-                    #    match response:
-                    #        case "y":
-                    #            tempCounter = 0
-                    #            finalCompetitorPosted = currentRoundCompetitorQuantity-1
-                    #            break
-                    #        case "n":
-                    #            while True:
-                    #                try:
-                    #                
-                    #                    tempCounter = 2*(int(input("Which poll should the first one posted? (1 is the first poll of this set)"))-1)
-                    #                    break
-                    #                except ValueError:
-                    #                    print("That isn't a valid number!")
-                    #            while True:
-                    #                try:
-                    #                    finalCompetitorPosted = 2*(int(input("Which poll should be the LAST one posted? ("+str(int(currentRoundCompetitorQuantity/2))+" is the last poll of this set)"))-1)
-                    #                    if finalCompetitorPosted < tempCounter:
-                    #                        print("Silly Billy! You can't have the last competitor be before the first one!")
-                    #                    else:
-                    #                        break
-                    #                except ValueError:
-                    #                    print("Uh oh!")
-                    #            break
-                    #        case _:
-                    #            print("That's not a valid response!")
-                    #validAnswers = ["published","draft","queue"]
-                    #while True:
-                    #    postMethod = str(input("Should these posts be published, put in the drafts, or put in the queue?\n"))
-                    #    if postMethod in validAnswers:
-                    #        print("OK!")
-                    #        break
-                    #    else:
-                    #        print("Type either \"published\", \"draft\", or \"queue\", please.")
-                    #prepares the format of polls to be posted
-                    #while tempCounter <= finalCompetitorPosted:
-                    #    blockAmount = 3
-                    #    tempCounter = tempCounter+2
-                    #    dictSection = competitorList["competitor"+str(finalOrderPos[tempCounter-2])]
-                    #    competitorPropagandaTitle = dictSection["propagandaTitle"]
-                    #    competitorPropaganda = dictSection["propaganda"]
-                    #    propagandaHeadingFormat={
-                    #        "type": "text",
-                    #        "text": competitorPropagandaTitle,
-                    #        "subtype": "heading1"
-                    #    }
-                    #    contentFormat = [
-                    #        {
-                    #            "type":"poll",
-                    #            "question": pollQuestion,
-                    #            "client_id": str(uuid.uuid4()),
-                    #            "answers":[
-                    #        {
-                    #            "answer_text":str(finalOrder[tempCounter - 2])
-                    #        },
-                    #        {
-                    #            "answer_text":str(finalOrder[tempCounter - 1])
-                    #        }
-                    #    ],
-                    #    "settings":{
-                    #        "closed_status": "closed-after",
-                    #        "expire_after": pollTimeLength
-                    #    }
-                    #    }
-                    #    ]
-                    #    pollTags = competitionSettings["pollTags"]
-                    #    pollTags.append(f"round {roundNumber}")
-                    #    pollTags.append(str(finalOrder[tempCounter - 2]))
-                    #    pollTags.append(str(finalOrder[tempCounter - 1]))
-                        # there has to be a better way to do this. but it's functional. oh well
-                        # this is getting the propaganda
-                    #    contentFormat.append(propagandaHeadingFormat)
-                    #    propagandaCounter = 0
-                    #    blockAmount = blockAmount+len(competitorPropaganda)
-                    #    while propagandaCounter < len(competitorPropaganda):
-                    #        propagandaSection = competitorPropaganda[propagandaCounter]
-                    #        if propagandaSection == propagandaPlaceholder:
-                    #            properganda = propagandaSection
-                    #        else:
-                    #            properganda = f"“{propagandaSection}”"
-                    #        paragraphFormat={
-                    #        "type": "text",
-                    #        "text": properganda,
-                    #        }
-                    #        contentFormat.append(paragraphFormat),
-                    #        propagandaCounter = propagandaCounter + 1
-                    #    dictSection = competitorList["competitor"+str(finalOrderPos[tempCounter-1])]
-                    #    competitorPropagandaTitle = dictSection["propagandaTitle"]
-                    #    competitorPropaganda = dictSection["propaganda"]
-                    #    propagandaHeadingFormat={
-                    #        "type": "text",
-                    #        "text": competitorPropagandaTitle,
-                    #        "subtype": "heading1"
-                    #    }
-                    #    contentFormat.append(propagandaHeadingFormat)
-                    #    propagandaCounter = 0
-                    #    blockAmount = blockAmount+len(competitorPropaganda)
-                    #    while propagandaCounter < len(competitorPropaganda):
-                    #        propagandaSection = competitorPropaganda[propagandaCounter]
-                    #        if propagandaSection == propagandaPlaceholder:
-                    #            properganda = propagandaSection
-                    #        else:
-                    #            properganda = f"“{propagandaSection}”"
-                    #        paragraphFormat={
-                    #        "type": "text",
-                    #        "text": properganda,
-                    #        }
-                    ##        contentFormat.append(paragraphFormat),
-                    #        propagandaCounter = propagandaCounter + 1
-                    #    blockCounter = 0
-                    #    postFormat = [
-                    #        {
-                    #            "type": "rows",
-                    #            "display":[],
-                    #            "truncate_after": 0
-                    #        }
-                    #    ]
-                    #    while blockCounter < blockAmount:
-                    #        blockSection = {
-                    #            "blocks":[blockCounter]
-                    #        }
-                    #        layoutBlock = postFormat[0]
-                    #        blockBlock=layoutBlock["display"]
-                    #        blockBlock.append(blockSection)
-                    #        blockCounter = blockCounter+1
-                        #creates each poll
-                    #    client.create_post(
-                    #        blogname=clientInfo["postedBlog"],
-                    #        state = postMethod,
-                    #        tags=pollTags,
-                    #        content=contentFormat,
-                    #        layout=postFormat
-                    #    )
-                    #    pollTags.remove(str(finalOrder[tempCounter - 2]))
-                    #    pollTags.remove(str(finalOrder[tempCounter - 1]))
-                    #    print(str(finalOrder[tempCounter - 2])+" vs. "+str(finalOrder[tempCounter - 1])+"\n")
                     break
                 case "2":
                     # updating matchup
@@ -945,7 +808,21 @@ else:
                         competitorDict = json.dumps(competitorList, indent=2)
                         f = open("tourny_data.json", "w")
                         f.write(competitorDict)
-                    break
+                    roundNumber = roundNumber + 1
+                    finalOrder = []
+                    finalOrderPos = []
+                    finalSeedList = []
+                    for x in range(competitorQuantity):
+                        dictSection = competitorList[f"competitor{x+1}"]
+                        if dictSection["lastRound"] >= roundNumber:
+                            finalOrder.append(dictSection["name"])
+                            finalOrderPos.append(dictSection["position"])
+                            finalSeedList.append(dictSection["seed"])
+                    currentRoundCompetitorQuantity = len(finalOrder)
+                    print("")
+                    print(f"And here is the updated competitor list, for round {roundNumber}:")
+                    for x in range(len(finalOrder)):
+                        print(f"{x+1}. {finalOrder[x]}")
                 case "3":
                     # finding the longest name
                     firstRoundCompetitors = []
@@ -1063,7 +940,7 @@ else:
                                 case "middle":
                                     centerNodes.append(x)
                                 case "right":
-                                    centerNodes.append(x)
+                                    rightNodes.append(x)
                         # sorting nodes into a list by layer
                         nodesByLayer = []
                         for x in range(maxLevel+1):
@@ -1267,35 +1144,265 @@ else:
                     w.close()
                     print('Saved bracket image to "bracket.svg"')
                     break
-                #case "4":
+                case "4":
                     # updating tournament data
-                    #while True:
-                    #    response = input("What would you like to change?\n1. Tournament Settings\n2. Competitor Information")
-                    #    match response:
-                    #        case "1":
-                    #            # change tornament settings
-                    #            while True:
-                    #                print("Here are the tournament's current settings:")
-                    #                for x in competitionSettings:
-                    #                    print(f'{x}: {competitionSettings[x]}')
-                    #                response = input("What do you want to change?\n1. Nothing\n2. The poll question\n3. The poll tags")
-                    #                match response:
-                    #                    case "1":
-                    #                        print("OK!")
-                    #                        competitorList["tournamentInfo"] = competitionSettings
-                    #                       break
-                    #                    case "2":
-                    #                        print("Here is the current poll question:")
-                    #                        print(competitionSettings["pollQuestion"])
-                    #                        newQuestion = input("What do you want the new question to be?\n")
-                    #                        print(f'OK! The new poll question is "{newQuestion}"')
-                    #                        competitionSettings["pollQuestion"] = newQuestion
-                    #            break
-                    #        case "2":
-                    #            # change competitor settings
-                    #            break
-                    #        case _:
-                    #            print("That's not an option!")
+                    while True:
+                        response = input("What would you like to change?\n1. Tournament Settings\n2. Competitor Information\n")
+                        match response:
+                            case "1":
+                                # change tornament settings
+                                while True:
+                                    print("Here are the tournament's current settings:")
+                                    for x in competitorList["tournamentInfo"]:
+                                        print(f'{x}: {competitorList["tournamentInfo"][x]}')
+                                    response = input("What do you want to change?\n1. Save updated information\n2. The poll question\n3. The poll tags\n4. The header type\n5. The header text\n6. The header alt text\n7. Toggle whether competitor images are used\n8. Edit additional questions\n9. Edit placeholder propaganda\n")
+                                    match response:
+                                        case "1":
+                                            competitorList["tournamentInfo"] = competitionSettings
+                                            competitorDict = json.dumps(competitorList, indent=2)
+                                            w=open("tourny_data.json", "w")
+                                            w.write(competitorDict)
+                                            w.close
+                                            print("Saved all changes to file!")
+                                            break
+                                        case "2":
+                                            print("Here is the current poll question:")
+                                            print(competitionSettings["pollQuestion"])
+                                            newQuestion = input("What do you want the new question to be?\n")
+                                            print(f'OK! The new poll question is "{newQuestion}"')
+                                            competitionSettings["pollQuestion"] = newQuestion
+                                        case "3":
+                                            print("Editing the poll tags!\n(note that the round and the competitors' names are added automatically.)")
+                                            while True:
+                                                print("Here are the tags, arranged by their list index:")
+                                                if len(competitionSettings["pollTags"]) == 0:
+                                                    print("(no entries)")
+                                                else:
+                                                    for x in range(len(competitionSettings["pollTags"])):
+                                                        #f strings aren't working for some reason here...
+                                                        print(str(x)+". \""+competitionSettings["pollTags"][x]+"\"")
+                                                listEditMethod = input("\nWhat do you want to do?\n1. Go back\n2. Delete entry\n3. Edit entry\n4. Add entry\n")
+                                                match listEditMethod:
+                                                    case "1":
+                                                        break
+                                                    case "2":
+                                                        while True:
+                                                            try:
+                                                                relevantIndex=int(input("Please type the index of the entry you wish to delete.\n(type a negative number to clear the list)\n"))
+                                                                if relevantIndex < 0:
+                                                                    competitionSettings["pollTags"] = []
+                                                                    break
+                                                                else:
+                                                                    if relevantIndex in range(len(competitionSettings["pollTags"])):
+                                                                        print(f"Deleting entry {relevantIndex}")
+                                                                        competitionSettings["pollTags"].pop(relevantIndex)
+                                                                        break
+                                                                    else:
+                                                                        print("Please type the index of an entry in the list!")
+                                                            except ValueError:
+                                                                print("Please type an integer!")
+                                                    case "3":
+                                                        while True:
+                                                            try:
+                                                                relevantIndex=int(input("Please type the index of the entry you wish to edit.\n"))
+                                                                if relevantIndex in range(len(competitionSettings["pollTags"])):
+                                                                    newEntry = input(f"What would you like the entry at {relevantIndex} to say?\n")
+                                                                    competitionSettings["pollTags"][relevantIndex] = newEntry
+                                                                    break
+                                                                else:
+                                                                    print("Please type the index of an entry in the list!")
+                                                            except ValueError:
+                                                                print("Please type an integer!")
+                                                    case "4":
+                                                        newEntry = input("What entry would you like to add?\n")
+                                                        competitionSettings["pollTags"].append(newEntry)
+                                                    case _:
+                                                        print("Please select a valid option!")
+                                        case "4":
+                                            while True:
+                                                headerOption = input("Which heading style should be used?\n1. None\n2. Text\n3. Image\n")
+                                                match headerOption:
+                                                    case "1":
+                                                        competitionSettings["headerSyle"] = "none"
+                                                        break
+                                                    case "2":
+                                                        competitionSettings["headerSyle"] = "text"
+                                                        break
+                                                    case "3":
+                                                        competitionSettings["headerSyle"] = "image"
+                                                        break
+                                                    case _:
+                                                        print("Please select a valid option!")
+                                        case "5":
+                                            print("Here is the current header text:")
+                                            if competitionSettings["headerText"] == False:
+                                                print("(no header text)")
+                                            else:
+                                                print(competitionSettings["headerText"])
+                                            competitionSettings["headerText"] = input("What should the new header text be?\n")
+                                        case "6":
+                                            if competitionSettings["headerImageAltText"] == False:
+                                                print("(no header alt text)")
+                                            else:
+                                                print(competitionSettings["headerImageAltText"])
+                                            competitionSettings["headerImageAltText"] = input("What should the header image's new alt text be?\n")
+                                        case "7":
+                                            if competitionSettings["useCompetitorImages"] == True:
+                                                competitionSettings["useCompetitorImages"] = False
+                                                print("No longer using competitor images!")
+                                            else:
+                                                competitionSettings["useCompetitorImages"] = True
+                                                print("Now using competitor images!")
+                                        case "8":
+                                            print("Editing the extra answers!")
+                                            while True:
+                                                print("Here are the current extra answers, arranged by their list index:")
+                                                if len(competitionSettings["extraAnswers"]) == 0:
+                                                    print("(no entries)")
+                                                else:
+                                                    for x in range(len(competitionSettings["extraAnswers"])):
+                                                        #f strings aren't working for some reason here...
+                                                        print(str(x)+". \""+competitionSettings["extraAnswers"][x]+"\"")
+                                                listEditMethod = input("\nWhat do you want to do?\n1. Go back\n2. Delete entry\n3. Edit entry\n4. Add entry\n")
+                                                match listEditMethod:
+                                                    case "1":
+                                                        break
+                                                    case "2":
+                                                        while True:
+                                                            try:
+                                                                relevantIndex=int(input("Please type the index of the entry you wish to delete.\n(type a negative number to clear the list)\n"))
+                                                                if relevantIndex < 0:
+                                                                    competitionSettings["extraAnswers"] = []
+                                                                    break
+                                                                else:
+                                                                    if relevantIndex in range(len(competitionSettings["extraAnswers"])):
+                                                                        print(f"Deleting entry {relevantIndex}")
+                                                                        competitionSettings["extraAnswers"].pop(relevantIndex)
+                                                                        break
+                                                                    else:
+                                                                        print("Please type the index of an entry in the list!")
+                                                            except ValueError:
+                                                                print("Please type an integer!")
+                                                    case "3":
+                                                        while True:
+                                                            try:
+                                                                relevantIndex=int(input("Please type the index of the entry you wish to edit.\n"))
+                                                                if relevantIndex in range(len(competitionSettings["extraAnswers"])):
+                                                                    newEntry = input(f"What would you like the entry at {relevantIndex} to say?\n")
+                                                                    competitionSettings["extraAnswers"][relevantIndex] = newEntry
+                                                                    break
+                                                                else:
+                                                                    print("Please type the index of an entry in the list!")
+                                                            except ValueError:
+                                                                print("Please type an integer!")
+                                                    case "4":
+                                                        newEntry = input("What entry would you like to add?\n")
+                                                        competitionSettings["extraAnswers"].append(newEntry)
+                                                    case _:
+                                                        print("Please select a valid option!")
+                                            competitionSettings["extraAnswerQuantity"] = len(competitionSettings["extraAnswers"])
+                                        case "9":
+                                            print("Current placeholder propaganda when there is none:")
+                                            print(competitionSettings["defaultPropaganda"])
+                                            competitionSettings["defaultPropaganda"] = input("What should the new placeholder propaganda be?\n")
+                                break
+                            case "2":
+                                while True:
+                                    print("Here is every competitor, ordered by their position value:")
+                                    for x in range(len(originalNameList)):
+                                        print(f"{x+1}. {originalNameList[x]}")
+                                    try:
+                                        relevantCompetitorPos = int(input("Type the position of the competitor whose info you wish to edit\n"))
+                                        if relevantCompetitorPos <= competitorQuantity:
+                                            if relevantCompetitorPos > 0:
+                                                print(f"Editing the data of the competitor called {originalNameList[relevantCompetitorPos-1]}")
+                                                break
+                                        print("Please choose a valid competitor!")
+                                    except KeyError:
+                                        print("Please type an integer!")
+                                dictSection = competitorList[f"competitor{relevantCompetitorPos}"]
+                                print("Here is all the information on this competitor:")
+                                for x in dictSection:
+                                    print(f"{x}: {dictSection[x]}")
+                                while True:
+                                    response = input("What do you want to edit?\n1. Nothing (save changes)\n2. Name\n3. Propaganda Title\n4. Alt text\n5. Competitor Propaganda\n")
+                                    match response:
+                                        case "1":
+                                            competitorList[f"competitor{relevantCompetitorPos}"] = dictSection
+                                            competitorDict = json.dumps(competitorList, indent=2)
+                                            w=open("tourny_data.json", "w")
+                                            w.write(competitorDict)
+                                            w.close
+                                            print("Saved all changes to file!")
+                                            originalNameList[relevantCompetitorPos-1] = dictSection["name"]
+                                            break
+                                        case "2":
+                                            print("Current name of competitor:")
+                                            print(dictSection["name"])
+                                            dictSection["name"] = input("What should this competitor's new name be?\n")
+                                        case "3":
+                                            print("Current propaganda title of competitor:")
+                                            print(dictSection["propagandaTitle"])
+                                            dictSection["propagandaTitle"] = input("What should this competitor's new propaganda title be?\n")
+                                        case "4":
+                                            print("Current image alt text of competitor:")
+                                            if dictSection["altText"] == False:
+                                                print("(no alt text)")
+                                            else:
+                                                print(dictSection["altText"])
+                                            dictSection["altText"] = input("What should this competitor's new image alt text be?\n")
+                                        case "5":
+                                            print("Editing this competitor's propaganda!")
+                                            while True:
+                                                print("Here are the current bits of propaganda, arranged by their list index:")
+                                                if len(dictSection["propaganda"]) == 0:
+                                                    print("(no entries)")
+                                                else:
+                                                    for x in range(len(dictSection["propaganda"])):
+                                                        #f strings aren't working for some reason here...
+                                                        print(str(x)+". \""+dictSection["propaganda"][x]+"\"")
+                                                listEditMethod = input("\nWhat do you want to do?\n1. Go back\n2. Delete entry\n3. Edit entry\n4. Add entry\n")
+                                                match listEditMethod:
+                                                    case "1":
+                                                        break
+                                                    case "2":
+                                                        while True:
+                                                            try:
+                                                                relevantIndex=int(input("Please type the index of the entry you wish to delete.\n(type a negative number to clear the list)\n"))
+                                                                if relevantIndex < 0:
+                                                                    response = input("Are you sure you want to delete all the propaganda? (y/n)\n")
+                                                                    if response == "y":
+                                                                        dictSection["propaganda"] = []
+                                                                    break
+                                                                else:
+                                                                    if relevantIndex in range(len(dictSection["propaganda"])):
+                                                                        print(f"Deleting entry {relevantIndex}")
+                                                                        dictSection["propaganda"].pop(relevantIndex)
+                                                                        break
+                                                                    else:
+                                                                        print("Please type the index of an entry in the list!")
+                                                            except ValueError:
+                                                                print("Please type an integer!")
+                                                    case "3":
+                                                        while True:
+                                                            try:
+                                                                relevantIndex=int(input("Please type the index of the entry you wish to edit.\n"))
+                                                                if relevantIndex in range(len(dictSection["propaganda"])):
+                                                                    newEntry = input(f"What would you like the entry at {relevantIndex} to say?\n")
+                                                                    dictSection["propaganda"][relevantIndex] = newEntry
+                                                                    break
+                                                                else:
+                                                                    print("Please type the index of an entry in the list!")
+                                                            except ValueError:
+                                                                print("Please type an integer!")
+                                                    case "4":
+                                                        newEntry = input("What entry would you like to add?\n")
+                                                        dictSection["propaganda"].append(newEntry)
+                                                    case _:
+                                                        print("Please select a valid option!")
+                                break
+                            case _:
+                                print("That's not an option!")
                 case _:
                     print("That's not an option :(")
     except FileNotFoundError:
