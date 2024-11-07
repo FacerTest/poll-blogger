@@ -3,9 +3,7 @@ A python program that sets up and runs single elimination tournaments on Tumblr 
 
 **THIS VERSION IS IN ACTIVE DEVELOPMENT!**
 
-**it is currently impossible to input competitor propaganda through the program**; you have to edit the competitor JSON file. I have no intention to add this feature, so someone else will have to if they want it.
-
-Also, I don't know if there is a good way to ship a python virtual environment with a program so you're going to have to set up your own. I do have a nice reqirement.txt file that you should be able to use to install everything you need with pip. If you don't set up a virtual environment and/or install pytumblr2, you will be able to do everything except automatically post polls to Tumblr.
+I don't know if there is a good way to ship a python virtual environment with a program so you're going to have to set up your own. I do have a nice reqirement.txt file that you should be able to use to install everything you need with pip. If you don't set up a virtual environment and/or install pytumblr2, you will be able to do everything except automatically post polls to Tumblr.
 
 # Features
 Currently, this program can do the following things:
@@ -24,7 +22,7 @@ This returns the competitors in an order that follows the methodology of cohort 
 ### 5. Equal Gap Seeding
 This is Equal gap seeding, as proposed by Alexander Karpov [here](https://www.sciencedirect.com/science/article/pii/S0167637716300876). Again, this follows a recursive pattern. However, instead of consistently attempting to place the strongest competitors against the weakest competitors for as long as possible, it instead seeks to spread out pairs of competitors (1 and 2, 3 and 4, and so on) evenly throughout the list.
 ## Running a competition
-Upon inputting a positive round or 0, the script will load all the competitors that made it to that round and list them out. From there, there are three options:
+Upon inputting a positive round or 0, the script will load all the competitors that made it to that round and list them out. From there, there are four options:
 ### 1. Post polls for these competitors
 This option posts polls for each of the matchups. These polls can either be published, put in drafts, or put in the queue. Furthermore, it is possible to only post a certain range of polls.
 #### What You Need in Order to Post Polls
@@ -35,5 +33,9 @@ In order to use the tumblr functionality of this script, you will need two thing
 If you do not have either of those, you will not be able to automatically post polls to tumblr.
 ### 2. Record results of this round
 This option will give you each matchup, and you will enter "1" or "2" in order to input which competitor won each matchup.
+
+Additionally, this will automatically take you to the next round.
 ### 3. Render chart for this round
 Renders a chart of the competition, up to the current round, and saves it as an SVG file in the directory that the python file is in.
+### 4. Edit tournament and competitor data
+Allows you to edit certain information about the tournament in general and for specific competitors, without editing the JSON file yourself. This includes all data that would not break the tournament if changed, such as competitor propaganda and some data about the style of the Tumblr posts tis program makes.
