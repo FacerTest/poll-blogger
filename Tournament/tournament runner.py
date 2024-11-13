@@ -1,7 +1,8 @@
 # Howdy!
 # If you're trying to improve my code, I am so very sorry :(
 
-useDummyData = True
+useDummyData = False
+autoAltText = True
 
 import json
 import random
@@ -13,7 +14,6 @@ try:
 except ModuleNotFoundError:
     print("You don't have pytumblr2 installed!")
     pytumblr2Installed = False
-import uuid
 
 def findFile(fileName, validFileLists):
     fileExists = False
@@ -113,7 +113,7 @@ if roundNumber < 0:
             break
         except FileExistsError:
             print("There's already a file there...")
-            response = input("Delete it? (y/n)")
+            response = input("Delete it? (y/n)\n")
             if response == "y":
                 print("Deleting it...")
                 os.remove("tourny_data.json")
@@ -443,6 +443,10 @@ if roundNumber < 0:
     # save data to json file
     finalOrder = []
     for x in range(len(finalSeedList)):
+            if autoAltText == True:
+                altText = f"{competitorNames[int(finalSeedList[x]-1)]}"
+            else:
+                altText = False
             if finalSeedList[x] in seedsToBye:
                 startRound = 1
                 gotBye = True
@@ -457,7 +461,7 @@ if roundNumber < 0:
             "name": competitorNames[int(finalSeedList[x]-1)],
             "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
             "propaganda":[],
-            "altText": False
+            "altText": altText
             }
             competitorDict["competitor"+str(x+1)] = dictSection
             finalOrder.append(competitorNames[int(finalSeedList[x]-1)])
