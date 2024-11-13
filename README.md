@@ -8,6 +8,8 @@ Currently, this program can do the following things:
 ## Setting up a competition
 When you run the program, you will first be prompted to enter the round number. If you enter that the round is is negative, then you will be guided through the process of entering competitors and influencing their seeding. There can be any integer amount of competitors; byes will be automatically calculated and applied to any competitor count that is not a power of 2. Competitors that are not granted a bye will compete in round 0.
 
+You will also have the option to post header and competitor images. These images will have to be saved in the "images" directory. See the text file in that directory for more information.
+
 Currently, the following seeding options are available:
 ### 1. No Seeding
 This returns the competitors in the order that they were entered in.
