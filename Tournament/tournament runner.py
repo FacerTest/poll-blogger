@@ -4,6 +4,7 @@
 useDummyData = True
 autoAltText = True
 dataFileName = "tournament_data.json"
+credentialFileName = "credentials.json"
 
 import json
 import random
@@ -26,6 +27,19 @@ def prettyPrintDict(dictToPrint, zeroOffset):
     for entry in dictToPrint:
         print(f"{theDetestableCountingVariable}. {entry}: {dictToPrint[entry]}")
         theDetestableCountingVariable = theDetestableCountingVariable + 1
+
+def formatStringFromJson(stringToFormat):
+    # this is mostly because I do not know any other good way to make the variables you can input more universal.
+    formattedString = stringToFormat.format(
+        topCompetitor=topCompetitor,
+        bottomCompetitor=bottomCompetitor,
+        topCompetitorPosition=topCompetitorPosition,
+        bottomCompetitorPosition=bottomCompetitorPosition,
+        topCompetitorSeed=topCompetitorSeed,
+        bottomCompetitorSeed=bottomCompetitorSeed,
+        roundNumber=roundNumber
+    )
+    return formattedString
 
 def ynQuestion(askedQuestion):
     acceptedYes = ["y", "Y", "yes", "Yes", "yEs", "YEs", "yeS", "YES"]
@@ -60,7 +74,6 @@ def findFile(fileName, validFileLists):
     else:
         ValidFileName = fileToFind
     return ValidFileName
-
 validTumblrImageFileFormats = [".png", ".jpeg", ".webp", ".gif"]
 
 def getValidInt(askedQuestion, minimumValue=None, maximumValue=None):
@@ -85,19 +98,21 @@ def getValidInt(askedQuestion, minimumValue=None, maximumValue=None):
     return inputtedVariable
 
 
-def editList(listToEdit, listName, maximumLength=None):
+def editList(listToEdit, listName, maximumLength=None, minimumLength=None):
     print(f"Editing the list {listName}")
     while True:
         print("Here are the entries, arranged by their list index:")
         if len(listToEdit) == 0:
             print("(there are no entries)")
         else:
-            for x in range(len(listToEdit)):
-                print(str(x)+". \""+listToEdit[x]+"\"")
+            prettyPrintList(listToEdit, 0)
         listEditMethod = getValidNumberSelection("\nWhat do you want to do?", ["Go Back", "Delete Entry", "Edit Entry", "Add Entry"])
         match listEditMethod:
             case 1:
-                break
+                if minimumLength is not None and len(listToEdit) < minimumLength:
+                    print(f"This list must have a minimum of {minimumLength} entries!\n(currently, it has {len(listToEdit)} entries)")
+                else:
+                    break
             case 2:
                 relevantIndex = getValidInt("Enter the index of the entry you wish to delete.\n(type a negative index to clear the list)\n", len(listToEdit)-1)
                 if relevantIndex < 0:
@@ -147,7 +162,7 @@ def editString(stringToEdit, stringName, minimumLength=None, maximumLength=None)
                 print(f"Please enter a string with a character count less than or equal to {maximumLength}.")
                 continue
         break
-    return stringToEdit
+    return inputtedVariable
 
 def flipBool(boolToFlip):
     if boolToFlip == True:
@@ -172,13 +187,41 @@ def getValidNumberSelection(askedQuestion, optionList):
         except ValueError:
             print("Please type an integer!")
     return inputtedVariable
+
+def expandPropaganda(postContent, postLayout):
+    # fill in propaganda when needed
+    topPropagandaBlock = False
+    bottomPropagandaBlock = False
+    for contentBlock in range(len(postContent)):
+        relevantBlock = postContent[relevantBlock]
+        if relevantBlock["type"] == "propaganda":
+            match relevantBlock["competitor"]:
+                case "top":
+                    topPropagandaBlock = contentBlock
+                case "bottom":
+                    bottomPropagandaBlock = contentBlock
+
+
+validTemplates = ["Nothing at all", "Just text", "Competitor images", "Competitor images with heading"]
+def selectPostFormatTemplates(templateOptions):
+    templateToUse = getValidNumberSelection("Which template do you want?", templateOptions)
+    #because a function can only return one variable...
+    # it should be [content, layout, media sources]
+    match templateToUse:
+        case 1:
+            #nothing
+            postDataList = [[],[],[]]
+        case 2:
+            postDataList = []
+
+    return postDataList
     
 # saving credentials for pytumblr2...
 if pytumblr2Installed == False:
     print("Skipping saving Tumblr credentials, because you don't have pytumblr2 installed!")
 else:
     try:
-        x = open("credentials.json","x")
+        x = open(credentialFileName,"x")
         x.close()
         if ynQuestion("Do you have valid credentials for accessing the Tumblr API? (y/n)\n") == True:
             print("OK! (You probably want to copy/paste these)")
@@ -198,12 +241,12 @@ else:
         else:
             clientInfo = {"hasCredentials": False}
         # dunno how I feel about storing this stuff in plaintext... but it's not like there's anything else I can really do
-        with open("credentials.json", "w") as f:
-            json.dump(clientInfo, f)
+        with open(credentialFileName, "w") as f:
+            json.dump(clientInfo, f, indent=2)
     except FileExistsError:
         # loading saved credentials file
         print("Using saved credentials...")
-        r = open("credentials.json")
+        r = open(credentialFileName)
         clientInfo = json.load(r)
         validTumblrCredentials = clientInfo["hasCredentials"]
         if validTumblrCredentials == True:
@@ -241,9 +284,9 @@ else:
     lastOverallRound = 0
     for x in range(1, len(competitorList)):
         dictSection = competitorList[f"competitor{x}"]
-        if dictSection["lastRound"] > lastOverallRound:
+        if dictSection["lastRound"] > lastOverallRound and dictSection["lastRound"] == 1 and dictSection["gotBye"] == False:
             lastOverallRound = dictSection["lastRound"]
-    roundNumber = getValidInt(f"What round is is it? Round {lastOverallRound} is the latest one with competitors in it.\n(inputting a negative round will start a new competition)\n")
+    roundNumber = getValidInt(f"What round is is it? Round {lastOverallRound} is the latest incomplete one.\n(inputting a negative round will start a new competition)\n")
 
 # starting a new tournament
 if roundNumber < 0:
@@ -257,7 +300,7 @@ if roundNumber < 0:
         else:
             while True:
                 try:
-                    roundNumber = int(input(f"What round is is it? Round {lastOverallRound} is the latest one with competitors in it.\n"))
+                    roundNumber = int(input(f"What round is is it? Round {lastOverallRound} is the latest incomplete one.\n(inputting a negative round will start a new competition)\n"))
                     if roundNumber < 0:
                         print("No. You didn't want to delete this file, remember?")
                     else:
@@ -313,7 +356,7 @@ if roundNumber < 0:
         seedingMethod = getValidNumberSelection("How should the competitors be seeded?", ["No Seeding", "Random Seeding", "Standard Seeding", "Cohort Randomized Seeding", "Equal Gap Seeding"])
         # setting some formatting data
         if ynQuestion("Should there be competitor images in the posted polls? (y/n)\n") == True:
-            print("OK! Put images in the /images directory of wherever you have this python file!")
+            print("OK! Put images in the /assets directory of wherever you have this python file!")
             useCompetitorImages = True
             needsImageDirectory = True
         else:
@@ -331,7 +374,7 @@ if roundNumber < 0:
                 headerStyle = "text"
                 headerText = input("What should the header say?\n")
             case 3:
-                print("OK! Put the image you want to use in the /images directory of wherever you have this python file!")
+                print("OK! Put the image you want to use in the /assets directory of wherever you have this python file!")
                 headerStyle = "image"
                 headerText = False
                 needsImageDirectory = True
@@ -471,84 +514,84 @@ if roundNumber < 0:
         if byes != competitorQuantity:
             print("Intermediate seed list:", intermediateSeedList)
             finalSeedList = intermediateSeedList
-            if seedingMethod in [3, 4, 5]:
-                # fake seed method
-                for x in intermediateSeedList:
-                    if x in fakeSeeds:
-                        finalSeedList.remove(x)
-                seedsToNotBye = []
-                for x in unsafeSeeds:
-                    seedsToNotBye.append(x)
-                unsafeSeedListPos = 0
-                while len(seedsToNotBye) < competitorQuantity-byes:
-                    unsafeSeedToFind = unsafeSeeds[unsafeSeedListPos]
-                    print(f"finding location of seed {unsafeSeedToFind}")
-                    safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)-1
-                    safeSeedToNotBye = finalSeedList[safeSeedCollateral]
-                    print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
-                    unsafeSeedListPos = unsafeSeedListPos - 1
-                    seedsToNotBye.append(finalSeedList[safeSeedCollateral])
-                print("seeds to not bye:", seedsToNotBye, len(seedsToNotBye))
-                seedsToBye = []
-                for x in seedList:
-                    if x not in seedsToNotBye:
-                        seedsToBye.append(x)
-            elif seedingMethod == 2:
-                #random seeding
-                for x in intermediateSeedList:
-                    if x in fakeSeeds:
-                        finalSeedList.remove(x)
-                seedsToNotBye = []
-                numberOfUnsafeSeeds = len(unsafeSeeds)
-                unsafeSeeds = []
-                possibleUnsafeSeeds = []
-                for x in range(math.floor(competitorQuantity/2)):
-                    possibleUnsafeSeeds.append(intermediateSeedList[2*x])
-                while len(unsafeSeeds) < numberOfUnsafeSeeds:
-                    unsafeSeedToAdd = random.choice(possibleUnsafeSeeds)
-                    possibleUnsafeSeeds.remove(unsafeSeedToAdd)
-                    unsafeSeeds.append(unsafeSeedToAdd)
-                for x in unsafeSeeds:
-                    seedsToNotBye.append(x)
-                unsafeSeedListPos = 0
-                while len(seedsToNotBye) < competitorQuantity-byes:
-                    unsafeSeedToFind = unsafeSeeds[unsafeSeedListPos]
-                    print(f"finding location of seed {unsafeSeedToFind}")
-                    safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)+1
-                    safeSeedToNotBye = finalSeedList[safeSeedCollateral]
-                    print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
-                    unsafeSeedListPos = unsafeSeedListPos +1
-                    seedsToNotBye.append(finalSeedList[safeSeedCollateral])
-                print("seeds to not bye:", seedsToNotBye, len(seedsToNotBye))
-                seedsToBye = []
-                for x in seedList:
-                    if x not in seedsToNotBye:
-                        seedsToBye.append(x)
-            else:
-                # anything else
-                finalSeedList = intermediateSeedList
-                actuallyUnsafeSeeds = []
-                seedsToNotBye = []
-                listPos = len(seedList) - 1
-                while len(unsafeSeeds) > len(actuallyUnsafeSeeds):
-                    actuallyUnsafeSeeds.append(finalSeedList[listPos])
-                    seedsToNotBye.append(finalSeedList[listPos])
-                    listPos = listPos-2
-                unsafeSeedListPos = 0
-                while len(seedsToNotBye) < competitorQuantity-byes:
-                    unsafeSeedToFind = actuallyUnsafeSeeds[unsafeSeedListPos]
-                    print(f"finding location of seed {unsafeSeedToFind}")
-                    safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)-1
-                    safeSeedToNotBye = finalSeedList[safeSeedCollateral]
-                    print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
-                    unsafeSeedListPos = unsafeSeedListPos - 1
-                    seedsToNotBye.append(finalSeedList[safeSeedCollateral])
-                print("seeds to not bye:", seedsToNotBye, len(seedsToNotBye))
-                seedsToBye = []
-                for x in seedList:
-                    if x not in seedsToNotBye:
-                        seedsToBye.append(x)
-                unsafeSeeds = actuallyUnsafeSeeds
+            match unsafeSeedingMethod:
+                case "Via Fake Seeds":
+                    # fake seed method
+                    for x in intermediateSeedList:
+                        if x in fakeSeeds:
+                            finalSeedList.remove(x)
+                    seedsToNotBye = []
+                    for x in unsafeSeeds:
+                        seedsToNotBye.append(x)
+                    unsafeSeedListPos = 0
+                    while len(seedsToNotBye) < competitorQuantity-byes:
+                        unsafeSeedToFind = unsafeSeeds[unsafeSeedListPos]
+                        print(f"finding location of seed {unsafeSeedToFind}")
+                        safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)-1
+                        safeSeedToNotBye = finalSeedList[safeSeedCollateral]
+                        print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
+                        unsafeSeedListPos = unsafeSeedListPos - 1
+                        seedsToNotBye.append(finalSeedList[safeSeedCollateral])
+                    print("seeds to not bye:", seedsToNotBye, len(seedsToNotBye))
+                    seedsToBye = []
+                    for x in seedList:
+                        if x not in seedsToNotBye:
+                            seedsToBye.append(x)
+                case "Random":
+                    #random seeding
+                    for x in intermediateSeedList:
+                        if x in fakeSeeds:
+                            finalSeedList.remove(x)
+                    seedsToNotBye = []
+                    numberOfUnsafeSeeds = len(unsafeSeeds)
+                    unsafeSeeds = []
+                    possibleUnsafeSeeds = []
+                    for x in range(math.floor(competitorQuantity/2)):
+                        possibleUnsafeSeeds.append(intermediateSeedList[2*x])
+                    while len(unsafeSeeds) < numberOfUnsafeSeeds:
+                        unsafeSeedToAdd = random.choice(possibleUnsafeSeeds)
+                        possibleUnsafeSeeds.remove(unsafeSeedToAdd)
+                        unsafeSeeds.append(unsafeSeedToAdd)
+                    for x in unsafeSeeds:
+                        seedsToNotBye.append(x)
+                    unsafeSeedListPos = 0
+                    while len(seedsToNotBye) < competitorQuantity-byes:
+                        unsafeSeedToFind = unsafeSeeds[unsafeSeedListPos]
+                        print(f"finding location of seed {unsafeSeedToFind}")
+                        safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)+1
+                        safeSeedToNotBye = finalSeedList[safeSeedCollateral]
+                        print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
+                        unsafeSeedListPos = unsafeSeedListPos +1
+                        seedsToNotBye.append(finalSeedList[safeSeedCollateral])
+                    print("seeds to not bye:", seedsToNotBye, len(seedsToNotBye))
+                    seedsToBye = []
+                    for x in seedList:
+                        if x not in seedsToNotBye:
+                            seedsToBye.append(x)
+                case "Insert After":
+                    finalSeedList = intermediateSeedList
+                    actuallyUnsafeSeeds = []
+                    seedsToNotBye = []
+                    listPos = len(seedList) - 1
+                    while len(unsafeSeeds) > len(actuallyUnsafeSeeds):
+                        actuallyUnsafeSeeds.append(finalSeedList[listPos])
+                        seedsToNotBye.append(finalSeedList[listPos])
+                        listPos = listPos-2
+                    unsafeSeedListPos = 0
+                    while len(seedsToNotBye) < competitorQuantity-byes:
+                        unsafeSeedToFind = actuallyUnsafeSeeds[unsafeSeedListPos]
+                        print(f"finding location of seed {unsafeSeedToFind}")
+                        safeSeedCollateral = finalSeedList.index(unsafeSeedToFind)-1
+                        safeSeedToNotBye = finalSeedList[safeSeedCollateral]
+                        print(f"seed {unsafeSeedToFind} is in a matchup with {safeSeedToNotBye}.")
+                        unsafeSeedListPos = unsafeSeedListPos - 1
+                        seedsToNotBye.append(finalSeedList[safeSeedCollateral])
+                    print("seeds to not bye:", seedsToNotBye, len(seedsToNotBye))
+                    seedsToBye = []
+                    for x in seedList:
+                        if x not in seedsToNotBye:
+                            seedsToBye.append(x)
+                    unsafeSeeds = actuallyUnsafeSeeds
         else:
             seedsToBye = seedList
             finalSeedList = intermediateSeedList
@@ -720,203 +763,17 @@ if roundNumber >= 0:
                         bottomCompetitorPosition = originalSeedList.index(bottomCompetitorSeed)
                         bottomCompetitorDict = competitorList[f"competitor{bottomCompetitorPosition+1}"]
                         print(f"Match {x+1}:\n{topCompetitor} vs. {bottomCompetitor}\n")
-                        # handling post layout
-                        postFormat = []
-                        match headerStyle:
-                            case "none":
-                                blocksBeforePoll = 0
-                                useHeaderImage = False
-                            case "text":
-                                blocksBeforePoll = 1
-                                useHeaderImage = False
-                                postFormat.append({
-                                    "type": "text",
-                                    "text": headerText,
-                                    "subtype": "heading1"
-                                })
-                            case "image":
-                                blocksBeforePoll = 1
-                                useHeaderImage = True
-                                if headerAltText == False:
-                                    postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "heading"
-                                        }],
-                                    })
-                                else:
-                                    postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "heading"
-                                        }],
-                                        "alt_text": headerAltText
-                                    })
-                        if useCompetitorImages == True:
-                            competitorImageBlocks = [blocksBeforePoll,blocksBeforePoll+1]
-                            blocksBeforePoll = blocksBeforePoll + 2
-                            if topCompetitorDict["altText"] == False:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "topcompetitor"
-                                        }]
-                                    })
-                            else:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "topcompetitor"
-                                        }],
-                                        "alt_text": topCompetitorDict["altText"]
-                                    })
-                            if bottomCompetitorDict["altText"] == False:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "bottomcompetitor"
-                                        }]
-                                    })
-                            else:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "bottomcompetitor"
-                                        }],
-                                        "alt_text": bottomCompetitorDict["altText"]
-                                    })
-                        else:
-                            competitorImageBlocks = False
-                        actualPollTags = [f"round {roundNumber}", f"{topCompetitor}", f"{bottomCompetitor}"]
-                        for y in pollTags:
-                            actualPollTags.append(y)        
-                        pollOptions = [
-                            {
-                                "answer_text": topCompetitor
-                            },
-                            {
-                                "answer_text": bottomCompetitor
-                            }
-                        ]
-                        if len(extraAnswers) > 0:
-                            for y in extraAnswers:
-                                pollOptions.append({
-                                    "answer_text": y
-                                })
-                        postFormat.append({
-                            "type": "poll",
-                            "question": pollQuestion,
-                            "client_id": "Tumblr forces you to give a poll UUID, but then ignores it and creates its own. Isn't that odd?",
-                            "answers": pollOptions,
-                            "settings":{
-                                "closed_status": "closed-after",
-                                "expire_after": pollTimeLength
-                            }
-                            })
-                        totalBlocks = blocksBeforePoll + 1
-                        # also, a reminder to myself... Since tumblr blocks start at 0 and it starts at 1, this "blocksBeforePoll" viariable is ALSO the block that the poll will be on.
-                        # setting up propaganda... there still has to be a better way than two very similar things run one after the other
-                        # for top competitor
-                        totalBlocks = totalBlocks+1
-                        postFormat.append({
-                            "type": "text",
-                            "text": topCompetitorDict["propagandaTitle"],
-                            "subtype": "heading2"
-                        })
-                        if len(topCompetitorDict["propaganda"])>0:
-                            for y in topCompetitorDict["propaganda"]:
-                                totalBlocks = totalBlocks+1
-                                postFormat.append({
-                                    "type": "text",
-                                    "text": f"“{y}”"
-                                })
-                        else:
-                            totalBlocks = totalBlocks+1
-                            postFormat.append({
-                                "type": "text",
-                                "text": propagandaPlaceholder
-                            })
-                        # for bottom competitor
-                        totalBlocks = totalBlocks+1
-                        postFormat.append({
-                            "type": "text",
-                            "text": bottomCompetitorDict["propagandaTitle"],
-                            "subtype": "heading2"
-                        })
-                        if len(bottomCompetitorDict["propaganda"])>0:
-                            for y in bottomCompetitorDict["propaganda"]:
-                                totalBlocks = totalBlocks+1
-                                postFormat.append({
-                                    "type": "text",
-                                    "text": f"“{y}”"
-                                })
-                        else:
-                            totalBlocks = totalBlocks+1
-                            postFormat.append({
-                                "type": "text",
-                                "text": propagandaPlaceholder
-                            })
-                        # setting up post layout
-                        postDisplayBlocks = []
-                        if headerStyle == "none":
-                            currentBlock = 0
-                        else:
-                            postDisplayBlocks.append({"blocks": [0]})
-                            currentBlock = 1
-                        if useCompetitorImages == True:
-                            postDisplayBlocks.append({"blocks": competitorImageBlocks})
-                            currentBlock = competitorImageBlocks[-1]+1
-                        for y in range(currentBlock, totalBlocks):
-                            postDisplayBlocks.append({"blocks": [y]})
-                        postLayout = [
-                            {
-                                "type": "rows",
-                                "display": postDisplayBlocks,
-                                "truncate_after": blocksBeforePoll
-                            }
-                        ]
-                        # setting up media sources
-                        postMediaSources = {}
-                        if headerStyle == "image":
-                            headerFilePath = findFile("images/header", validTumblrImageFileFormats)
-                            if headerFilePath == False:
-                                print("There isn't a valid heading image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"heading\"\n3. Make sure that the heading image is a file type supported by Tumblr")
-                            else:
-                                postMediaSources["heading"] = headerFilePath
-                        if useCompetitorImages == True:
-                            topCompetitorFilePath = headerFilePath = findFile(f"images/{topCompetitorPosition+1}", validTumblrImageFileFormats)
-                            if topCompetitorFilePath == False:
-                                print(f"There isn't a valid image for competitor {topCompetitorPosition+1}... Attempting to use a placeholder image.")
-                                placeholderFilePath = headerFilePath = findFile("images/placeholder", validTumblrImageFileFormats)
-                                if placeholderFilePath == False:
-                                    print("There isn't a valid placeholder image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"placeholder\"\n3. Make sure that the heading image is a file type supported by Tumblr")
-                                else:
-                                    postMediaSources["topcompetitor"] = placeholderFilePath
-                            else:
-                                postMediaSources["topcompetitor"] = topCompetitorFilePath
-                            bottomCompetitorFilePath = headerFilePath = findFile(f"images/{bottomCompetitorPosition+1}", validTumblrImageFileFormats)
-                            if bottomCompetitorFilePath == False:
-                                print(f"There isn't a valid image for competitor {bottomCompetitorPosition+1}... Attempting to use a placeholder image.")
-                                placeholderFilePath = headerFilePath = findFile("images/placeholder", validTumblrImageFileFormats)
-                                if placeholderFilePath == False:
-                                    print("There isn't a valid placeholder image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"placeholder\"\n3. Make sure that the heading image is a file type supported by Tumblr")
-                                else:
-                                    postMediaSources["bottomcompetitor"] = placeholderFilePath
-                            else:
-                                postMediaSources["bottomcompetitor"] = bottomCompetitorFilePath
+                        postData = tournamentOptions["postData"]
+                        actualPollTags = []
+                        for x in tournamentOptions["pollTags"]:
+                            actualPollTags.append
                         client.create_post(
                             blogname=postedBlog,
                             tags= actualPollTags,
                             state= postMethod,
-                            content = postFormat,
-                            layout = postLayout,
-                            media_sources = postMediaSources
+                            content = postData["content"],
+                            layout = postData["layout"],
+                            media_sources = postData["mediaSources"]
                         )
                 break
             case 2:
@@ -926,13 +783,14 @@ if roundNumber >= 0:
                     getValidNumberSelection(f"Matchup {x + 1}:", [finalOrder[2*x], finalOrder[1+(2*x)], "Skip this matchup"])
                     match response:
                         case 1:
-                            competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber + 1
-                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber
-                        case 2:
                             competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber
                             competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber + 1
+                        case 2:
+                            competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber + 1
+                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber
                         case 3:
                             pass
+                    print("")
                 competitorDict = json.dumps(competitorList, indent=2)
                 f = open(dataFileName, "w")
                 f.write(competitorDict)
@@ -1121,9 +979,9 @@ if roundNumber >= 0:
                                 svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
                             if currentNode["side"]=="right":
                                 svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]-1]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
-                            if roundNumber > int(totalRounds):
+                            if len(finalOrder) == 1:
                                 competitionVictor = finalOrder[0]
-                                svgMarkup += f'<text x="{possibleXPositions[int(len(possibleXPositions)/2)]}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
+                                svgMarkup += f'<text x="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
                         else:
                             print(f"node {currentNodeID} does not exist!")
                 svgMarkup += '</svg>'
@@ -1217,5 +1075,5 @@ if roundNumber >= 0:
                     tournamentInfo["Parameters"] = tournamentOptions
                     competitorList["Tournament Info"] = tournamentInfo
                     with open(dataFileName, "w") as f:
-                        json.dump(competitorList, f)
-        break
+                        json.dump(competitorList, f, indent=2)
+                break
