@@ -1,3 +1,5 @@
+**THIS VERSION IS IN ACTIVE DEVELOPMENT!**
+
 # poll-blogger
 A python program that sets up and runs single elimination tournaments on Tumblr with (hopefully) minimal human tedium
 
