@@ -1,5 +1,6 @@
 useDummyData = True
 autoAltText = True
+actuallyPost = True
 dataFileName = "tournamentData.json"
 bracketImageName = "bracket.svg"
 
@@ -21,14 +22,14 @@ if useDummyData == True:
 def formatStringFromJson(stringToFormat):
     # this is mostly because I do not know any other good way to make the variables you can input more universal.
     formattedString = stringToFormat.format(
-        topCompetitorName=topCompetitorDict["name"],
-        bottomCompetitorName=bottomCompetitorDict["name"],
+        topCompetitorName=topCompetitor,
+        bottomCompetitorName=bottomCompetitor,
 
-        topCompetitorPosition=topCompetitorDict["position"],
-        bottomCompetitorPosition=bottomCompetitorDict["position"],
+        topCompetitorPosition=topCompetitorPosition+1,
+        bottomCompetitorPosition=bottomCompetitorPosition+1,
 
-        topCompetitorSeed=topCompetitorDict["seed"],
-        bottomCompetitorSeed=bottomCompetitorDict["seed"],
+        topCompetitorSeed=topCompetitorSeed,
+        bottomCompetitorSeed=bottomCompetitorSeed,
 
         topCompetitorPropagandaTitle = topCompetitorDict["propagandaTitle"],
         bottomCompetitorPropagandaTitle = bottomCompetitorDict["propagandaTitle"],
@@ -39,8 +40,13 @@ def formatStringFromJson(stringToFormat):
         topCompetitorByedRounds = topCompetitorDict["byedRounds"],
         bottomCompetitorByedRounds = bottomCompetitorDict["byedRounds"],
 
+        topCompetitorAltText = topCompetitorDict["altText"],
+        bottomCompetitorAltText = bottomCompetitorDict["altText"],
+
         roundNumber=roundNumber,
         competitorQuantity = competitorQuantity,
+        pollQuantity = int(currentRoundCompetitorQuantity/2),
+        currentPoll = ":(",
         currentRoundCompetitorQuantity = currentRoundCompetitorQuantity
     )
     return formattedString
@@ -221,11 +227,18 @@ else:
                 "oauthSecret": oauthSecret,
                 "postedBlog": postedBlog
             }
+            client = pytumblr2.TumblrRestClient(
+                consumerKey,
+                consumerSecret,
+                oauthToken,
+                oauthSecret
+            )
+            client.info()
         else:
             clientInfo = {"hasCredentials": False}
         # dunno how I feel about storing this stuff in plaintext... but it's not like there's anything else I can really do
         with open("credentials.json", "w") as f:
-            json.dump(clientInfo, f)
+            json.dump(clientInfo, f, indent=2)
     except FileExistsError:
         # loading saved credentials file
         print("Using saved credentials...")
@@ -278,37 +291,30 @@ else:
         match response:
             case 1:
                 # getting the list of valid rounds
-                validRounds = []
                 allByed = True
-                byesByRound = []
-                competitorsByRound = []
-                for x in range(1, len(competitorList)):
-                    dictSection = competitorList[f"competitor{x}"]
-                    while len(competitorsByRound) < dictSection["lastRound"]+1:
-                        competitorsByRound.append(0)
-                    competitorsByRound[dictSection["lastRound"]] = competitorsByRound[dictSection["lastRound"]] + 1
-                    if dictSection["lastRound"] not in validRounds:
-                        validRounds.append(dictSection["lastRound"])
-                    else:
-                        for y in dictSection["byedRounds"]:
-                            while len(byesByRound) < y+1 or len(byesByRound) < dictSection["lastRound"]+1:
-                                byesByRound.append(0)
-                            byesByRound[y] = byesByRound[y] + 1
-            
+                byesByRound = {}
+                competitorsByRound = {}
+                minimumRound = 0
+                for x in range(len(competitorList)-1):
+                    if competitorList[f"competitor{x+1}"]["lastRound"] > minimumRound:
+                        minimumRound = competitorList[f"competitor{x+1}"]["lastRound"]
+                    while len(competitorsByRound) < minimumRound+1:
+                        competitorsByRound[len(competitorsByRound)] = 0
+                    while len(byesByRound) < minimumRound:
+                        byesByRound[len(byesByRound)] = 0
+                    competitorsByRound[competitorList[f"competitor{x+1}"]["lastRound"]] = competitorsByRound[competitorList[f"competitor{x+1}"]["lastRound"]]+1
+                    for y in competitorList[f"competitor{x+1}"]["byedRounds"]:
+                        byesByRound[y]=byesByRound[y]+1
                 
                 orderedValidRounds = []
-                for x in range(len(validRounds)+2):
-                    if x in validRounds:
-                        orderedValidRounds.append(x)
-                
-                #print("Competitors by round:")
-                #prettyPrintList(competitorsByRound, orderedValidRounds[0])
-                #print("\nByes by round:")
-                #prettyPrintList(byesByRound, orderedValidRounds[0])
+                for x in competitorsByRound:
+                    orderedValidRounds.append(x)
 
-                for x in orderedValidRounds:
-                    if competitorsByRound[x] == byesByRound[x-1] or competitorsByRound[x] == competitorsByRound[x-1] - byesByRound[x-1]:
+                for x in range(1, len(orderedValidRounds)):
+                    if competitorsByRound[orderedValidRounds[x]] == byesByRound[orderedValidRounds[x]-1] and competitorsByRound[orderedValidRounds[x]-1] > 0:
                         orderedValidRounds.remove(x)
+                    if competitorsByRound[orderedValidRounds[x-1]] == 0:
+                        orderedValidRounds.remove(x-1)
                 
                 # random sidequest to figure out if there is a final round
                 isFinalRound = False
@@ -319,7 +325,7 @@ else:
                     else:
                         # setting finalRound to False makes everything act like the final round is 0... which is obviously bad
                         finalRound = -1
-                
+
                 # back to getting a list of rounds
                 prettyValidRounds = []
                 for x in orderedValidRounds:
@@ -443,7 +449,6 @@ if roundNumber < 0:
         blocksBeforePoll = blocksBeforePoll+2
         postFormat.append({
                 "type":"image",
-                "known_file_type": False,
                 "media": [{
                     "type": "images/png",
                     "identifier": "topCompetitor"
@@ -452,7 +457,6 @@ if roundNumber < 0:
         })
         postFormat.append({
                 "type":"image",
-                "known_file_type": False,
                 "media": [{
                     "type": "images/png",
                     "identifier": "bottomCompetitor"
@@ -527,8 +531,8 @@ if roundNumber < 0:
     if headerStyle == "image":
         postMediaSources["heading"] = "assets/header"
     if useCompetitorImages == True:
-        postMediaSources["topCompetitor"] = "assets/{topCompetitorPos}"
-        postMediaSources["bottomCompetitor"] = "assets/{bottomCompetitorPos}"
+        postMediaSources["topCompetitor"] = "assets/{topCompetitorPosition}"
+        postMediaSources["bottomCompetitor"] = "assets/{bottomCompetitorPosition}"
 
     #all this "dummy" stuff... it's purely for the purpose of setting up a, well, "dummy" pseudo-npf post that the program understands...
     #all the logic for converting this into an actual tumblr post is lower down
@@ -766,12 +770,12 @@ if roundNumber < 0:
                 "headerText": headerText,
                 "defaultPropaganda": propagandaPlaceholder,
                 "pollQuestion": pollQuestion,
-                "pollTags": pollTags,
                 "extraAnswers": [],
                 "postData": {
                     "content": postFormat,
                     "layout": postLayout,
-                    "mediaSources": postMediaSources
+                    "mediaSources": postMediaSources,
+                    "postTags": pollTags
                 }
             }
         }
@@ -787,7 +791,7 @@ if roundNumber < 0:
             gotBye = [0]
         else:
             startRound = 0
-            gotBye = [noByeValue]
+            gotBye = []
         dictSection = {
         "position": x+1,
         "seed": finalSeedList[x],
@@ -817,6 +821,10 @@ if roundNumber >= 0:
     f = open(dataFileName)
     competitorList = json.load(f)
     f.close()
+    # this sucks. it is so bad. unfortuanately i am recovering from being chokeslammed so i can't write something better
+    f = open(dataFileName)
+    competitorListCloneForSafekeeping = json.load(f)
+    f.close()
     tournamentInfo = competitorList["Tournament Info"]
     tournamentOptions = tournamentInfo["Parameters"]
     tournamentConstants = tournamentInfo["Constants"]
@@ -831,7 +839,6 @@ if roundNumber >= 0:
     placehoderImageAltText = tournamentOptions["placeholderImageAltText"]
     propagandaPlaceholder = tournamentOptions["defaultPropaganda"]
     pollQuestion = tournamentOptions["pollQuestion"]
-    pollTags = tournamentOptions["pollTags"]
     extraAnswers = tournamentOptions["extraAnswers"]
     # calculating some more info on the fly
     powerOf2UpperBound = 1
@@ -902,42 +909,187 @@ if roundNumber >= 0:
                         if firstMatchup<=int(currentRoundCompetitorQuantity/2):
                             if lastMatchup<=int(currentRoundCompetitorQuantity/2):
                                 if firstMatchup<=lastMatchup:
+                                    print("broke from the loop!")
                                     break
                         print("Make sure that both bounds are in the amount of matchups there are, and that the final poll is after or the same as the first one!")
                     except ValueError:
                         print("Make sure you typed an integer!")
-                    selection = getValidNumberSelection("What should happen to these polls?", ["Immediately publish them", "Save them as drafts", "Put them in the queue"])
-                    match selection:
-                        case 1:
-                            postMethod = "published"
-                        case 2:
-                            postMethod = "draft"
-                        case 3:
-                            postMethod = "queue"
-                    useAnyImages = False
-                    if headerStyle == "image":
-                        useAnyImages = True
-                    if useCompetitorImages == True:
-                        useAnyImages = True
-                    for x in range(firstMatchup-1, lastMatchup):
-                        matchupPos = 2*x
-                        topCompetitor = finalOrder[matchupPos]
-                        topCompetitorSeed=finalSeedList[matchupPos]
-                        bottomCompetitor = finalOrder[matchupPos+1]
-                        bottomCompetitorSeed = finalSeedList[matchupPos+1]
-                        topCompetitorPosition = originalSeedList.index(topCompetitorSeed)
-                        topCompetitorDict = competitorList[f"competitor{topCompetitorPosition+1}"]
-                        bottomCompetitorPosition = originalSeedList.index(bottomCompetitorSeed)
-                        bottomCompetitorDict = competitorList[f"competitor{bottomCompetitorPosition+1}"]
-                        print(f"Match {x+1}:\n{topCompetitor} vs. {bottomCompetitor}\n")
-                        #client.create_post(
-                        #    blogname=postedBlog,
-                        #    tags= actualPollTags,
-                        #    state= postMethod,
-                        #    content = postFormat,
-                        #    layout = postLayout,
-                        #    media_sources = postMediaSources
-                        #)
+                selection = getValidNumberSelection("What should happen to these polls?", ["Immediately publish them", "Save them as drafts", "Put them in the queue"])
+                match selection:
+                    case 1:
+                        postMethod = "published"
+                    case 2:
+                        postMethod = "draft"
+                    case 3:
+                        postMethod = "queue"
+                for x in range(firstMatchup-1, lastMatchup):
+                    matchupPos = 2*x
+                    topCompetitor = finalOrder[matchupPos]
+                    topCompetitorSeed=finalSeedList[matchupPos]
+                    bottomCompetitor = finalOrder[matchupPos+1]
+                    bottomCompetitorSeed = finalSeedList[matchupPos+1]
+
+                    topCompetitorDict={}
+                    bottomCompetitorDict={}
+
+                    topCompetitorPosition = originalSeedList.index(topCompetitorSeed)
+                    topCompetitorDict = competitorList[f"competitor{topCompetitorPosition+1}"]
+                    bottomCompetitorPosition = originalSeedList.index(bottomCompetitorSeed)
+                    bottomCompetitorDict = competitorList[f"competitor{bottomCompetitorPosition+1}"]
+
+                    print(f"Match {x+1}:\n{topCompetitor} vs. {bottomCompetitor}\n")
+                    
+                    # convert dummy post format to actual tumblr NPF
+                    dummyPostData = tournamentOptions["postData"]
+
+                    # converting tags
+                    actualPostTags = []
+                    for y in dummyPostData["postTags"]:
+                        actualPostTags.append(formatStringFromJson(y))
+
+                    # converting post content
+                    expandedRanges = {}
+                    loopNumber = 0
+                    actualPostContent = []
+                    # WHY IS IT OVERWRITING THE DUMMY VALUES???? I am going to chokeslam whoever designed this system.
+                    for y in range(len(competitorList["Tournament Info"]["Parameters"]["postData"]["content"])):
+                        
+                        competitorList = competitorListCloneForSafekeeping
+                        dummyBlock = dummyPostData["content"][y]
+
+                        match dummyBlock["type"]:
+                            case "text":
+                                dummyBlock["text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["text"])
+                            case "image":
+                                dummyBlock["alt_text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["alt_text"])
+                            case "poll":
+                                dummyAnswers = []
+                                for z in range(len(dummyBlock["answers"])):
+                                    answerSection = dummyBlock["answers"][z]
+                                    answerSection["answer_text"]=formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["answers"][z]["answer_text"])
+                                    dummyAnswers.append(answerSection)
+                                dummyBlock["answers"] = dummyAnswers
+                                dummyBlock["question"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["question"])
+                                dummyBlock["settings"]["expire_after"] = pollTimeLength
+                            case "propaganda":
+                                initialBlock = loopNumber
+                                expandedRanges[loopNumber] = {
+                                    "createNewRows": True,
+                                    "initialPosition": initialBlock
+                                }
+                                additionalBlocks = 0
+                                match dummyBlock["propaganda"]:
+                                    case "top":
+                                        if len(topCompetitorDict["propaganda"]) == 0:
+                                            dummyBlock = {"type": "text", "text": tournamentOptions["defaultPropaganda"]}
+                                        else:
+                                            additionalBlocks = len(topCompetitorDict["propaganda"])-1
+                                            for z in range(len(topCompetitorDict["propaganda"])):
+                                                propagandaSection = topCompetitorDict["propaganda"][z]
+                                                actualPostContent.append({"type": "text", "text": f"“{propagandaSection}”"})
+                                        expandedRanges[loopNumber]["finalPosition"]=initialBlock+additionalBlocks
+                                        expandedRanges[loopNumber]["additionalBlocks"]=additionalBlocks
+                                    case "bottom":
+                                        if len(bottomCompetitorDict["propaganda"]) == 0:
+                                            print(f"Competitor {bottomCompetitor} has no propaganda.")
+                                            dummyBlock = {"type": "text", "text": tournamentOptions["defaultPropaganda"]}
+                                        else:
+                                            additionalBlocks = len(bottomCompetitorDict["propaganda"])-1
+                                            for z in range(len(bottomCompetitorDict["propaganda"])):
+                                                propagandaSection = bottomCompetitorDict["propaganda"][z]
+                                                actualPostContent.append({"type": "text", "text": f"“{propagandaSection}”"})
+                                        expandedRanges[loopNumber]["finalPosition"]=initialBlock+additionalBlocks
+                                        expandedRanges[loopNumber]["additionalBlocks"]=additionalBlocks
+                            case _:
+                                pass
+                        if dummyBlock["type"] != "propaganda":
+                            actualPostContent.append(dummyBlock)
+                        loopNumber = loopNumber+1
+
+                    # fixing layout...
+                    if len(expandedRanges) == 0:
+                        actualPostLayout = dummyPostData["layout"]
+                    else:
+                        actualPostLayout = []
+                        expansionPositions = []
+                        lastBlock=-1
+                        for y in expandedRanges:
+                            expansionPositions.append(y)
+                        for y in dummyPostData["layout"]:
+                            # this is a list for whatever reason...
+                            layoutSection = y
+                            sectionDisplay = []
+                            try:
+                                initialTruncateAfterBlock = layoutSection["truncate_after"]
+                            except KeyError:
+                                initialTruncateAfterBlock = False
+                            for z in y["display"]:
+                                blocksThisRow = 0
+                                currentRow = []
+                                for block in z["blocks"]:
+                                    blocksThisRow = blocksThisRow+1
+                                    if block in expansionPositions:
+                                        if expandedRanges[block]["createNewRows"] == False:
+                                            standardRowAdding = True
+                                            blocksThisRow = blocksThisRow+expandedRanges[block]["additionalBlocks"]
+                                        else:
+                                            standardRowAdding = False
+                                            for newBlocks in range(expandedRanges[block]["additionalBlocks"]+1):
+                                                lastBlock = lastBlock+1
+                                                sectionDisplay.append({"blocks": [lastBlock]})
+                                    else:
+                                        standardRowAdding = True
+                                if standardRowAdding == True:
+                                    for block in range(blocksThisRow):
+                                        lastBlock = lastBlock+1
+                                        currentRow.append(lastBlock)
+                                    sectionDisplay.append({"blocks": currentRow})
+                            layoutSection["display"]=sectionDisplay
+                            if initialTruncateAfterBlock is not False:
+                                truncateOffset = 0
+                                for z in expansionPositions:
+                                    if z <= initialTruncateAfterBlock:
+                                        truncateOffset=truncateOffset+expandedRanges[z]["additionalBlocks"]
+                                layoutSection["truncate_after"] = layoutSection["truncate_after"] + truncateOffset
+                            actualPostLayout.append(layoutSection)
+
+                    # setting up media sources...
+                    actualMediaSources = {}
+                    for y in dummyPostData["mediaSources"]:
+                        foundFile = findFile(formatStringFromJson(dummyPostData["mediaSources"][y]), validTumblrImageFileFormats)
+                        if foundFile == False:
+                            foundFile = findFile("assets/placeholder", validTumblrImageFileFormats)
+                        actualMediaSources[y] = foundFile
+
+                    # creating post
+                    if actuallyPost == True:
+                        if len(actualPostTags) > 0:
+                            client.create_post(
+                                blogname=postedBlog,
+                                tags= actualPostTags,
+                                state= postMethod,
+                                content = actualPostContent,
+                                layout = actualPostLayout,
+                                media_sources = actualMediaSources
+                            )
+                        else:
+                            client.create_post(
+                                blogname=postedBlog,
+                                state= postMethod,
+                                content = actualPostContent,
+                                layout = actualPostLayout,
+                                media_sources = actualMediaSources
+                            )
+                    else:
+                        print("Tags:")
+                        prettyPrintList(actualPostTags, 1)
+                        print("Post content:")
+                        prettyPrintList(actualPostContent, 1)
+                        print("Layout:")
+                        prettyPrintList(actualPostLayout, 1)
+                        print("Media sources:")
+                        for y in actualMediaSources:
+                            print(f"{y}: {actualMediaSources[y]}")                            
                 break
             case 2:
                 # updating matchup
@@ -948,11 +1100,9 @@ if roundNumber >= 0:
                         case 1:
                             competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber + 1
                             competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber
-                            print(f"The competitor \"{competitorList[f"competitor{finalOrderPos[x*2]}"]["name"]}\" advanced!")
                         case 2:
                             competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber
                             competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber + 1
-                            print(f"The competitor \"{competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["name"]}\" advanced!")
                 competitorDict = json.dumps(competitorList, indent=2)
                 f = open(dataFileName, "w")
                 f.write(competitorDict)
@@ -970,6 +1120,10 @@ if roundNumber >= 0:
                 print(f"\nAnd here is the updated competitor list, for round {roundNumber}:")
                 for x in range(len(finalOrder)):
                     print(f"{x+1}. {finalOrder[x]}")
+                if len(finalOrder) == 1:
+                    finalRound = roundNumber
+                    finalRoundSelected = True
+                    print(f"Round {roundNumber} is the final round!")
             case 3:
                 # finding the longest name
                 firstRoundCompetitors = []
@@ -1150,83 +1304,4 @@ if roundNumber >= 0:
                 break
             case 4:
                 # updating tournament data
-                optionList = ["Nothing. Take me back!"]
-                # you know... there's got to be a better way to do this. oh well!
-                dummyString = ""
-                dummyList = []
-                dummyBoolean = False
-                for x in tournamentOptions:
-                    optionList.append(x)
-                while True:
-                    response = getValidNumberSelection("What would you like to edit?", ["Tournament Data", "Competitor Data", "Nothing. Let me out!"])
-                    match response:
-                        case 1:
-                            # editing tournament data
-                            while True:
-                                print("Constants (for reference, you can't edit these):")
-                                prettyPrintDict(tournamentConstants, 1)
-                                print("Editable Settings:")
-                                prettyPrintDict(tournamentOptions, 1)
-                                variableToEdit = getValidNumberSelection("What value do you wish to edit?", optionList)
-                                match variableToEdit:
-                                    case 1:
-                                        break
-                                    case 11:
-                                        while True:
-                                            getValidNumberSelection("You want to edit the poll format?", ["No, I don't.", "Choose from templates", "Edit the post's data directly."])
-                                    case _:
-                                        relevantIndex = variableToEdit - 1
-                                        variableToEdit = optionList[relevantIndex]
-                                        variableType = type(tournamentOptions[variableToEdit])
-                                        if variableType == type(dummyList):
-                                            match variableToEdit:
-                                                case "pollTags":
-                                                    maxLength = 30
-                                                case "extraAnswers":
-                                                    maxLength = 10
-                                                case _:
-                                                    maxLength = None
-                                            tournamentOptions[variableToEdit] = editList(tournamentOptions[variableToEdit], variableToEdit, maxLength)
-                                        if variableType == type(dummyString):
-                                            tournamentOptions[variableToEdit] = editString(tournamentOptions[variableToEdit], variableToEdit, 1)
-                                        if variableType == dummyBoolean:
-                                            tournamentOptions[variableToEdit] = flipBool(tournamentOptions[variableToEdit])
-                        case 2:
-                            # editing competitor data
-                            relevantCompetitor = getValidNumberSelection("Input the position of the competitor you wish to edit the information of:", finalOrder)
-                            dictSection = competitorList[f"competitor{relevantCompetitor}"]
-                            immutableCharacteristics = ["lastRound", "seed", "position", "byedRounds"]
-                            while True:
-                                print("Here is all the data associated with that competitor:")
-                                optionList = ["Nothing. Take me back!"]
-                                for x in dictSection:
-                                    if x in immutableCharacteristics:
-                                        print(f"{x}: {dictSection[x]} (Cannot be changed)")
-                                    else:
-                                        print(f"{x}: {dictSection[x]}")
-                                        optionList.append(x)
-                                variableToEdit = getValidNumberSelection("What variable should be edited?", optionList)
-                                match variableToEdit:
-                                    case 1:
-                                        break
-                                    case _:
-                                        relevantIndex = variableToEdit - 1
-                                        variableToEdit = optionList[relevantIndex]
-                                        variableType = type(dictSection[variableToEdit])
-                                        if variableType == type(dummyList):
-                                            dictSection[variableToEdit] = editList(dictSection[variableToEdit], variableToEdit)
-                                        if variableType == type(dummyString):
-                                            dictSection[variableToEdit] = editString(dictSection[variableToEdit], variableToEdit, 1)
-                                        if variableType == dummyBoolean:
-                                            dictSection[variableToEdit] = flipBool(dictSection[variableToEdit])
-                            competitorList[f"competitor{relevantCompetitor}"] = dictSection
-
-                        case 3:
-                            break
-                    # saving updated tournament info
-                    tournamentInfo["Constants"] = tournamentConstants
-                    tournamentInfo["Parameters"] = tournamentOptions
-                    competitorList["Tournament Info"] = tournamentInfo
-                    with open(dataFileName, "w") as f:
-                        json.dump(competitorList, f)
-                break
+                print("Sorry! This feature is currently disabled.\nYou can always edit values via the JSON file itself until this functionality is restored.")
