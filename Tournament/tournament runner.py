@@ -1,8 +1,8 @@
-# Howdy!
-# If you're trying to improve my code, I am so very sorry :(
-
-useDummyData = False
+useDummyData = True
 autoAltText = True
+actuallyPost = True
+dataFileName = "tournamentData.json"
+bracketImageName = "bracket.svg"
 
 import json
 import random
@@ -14,6 +14,79 @@ try:
 except ModuleNotFoundError:
     print("You don't have pytumblr2 installed!")
     pytumblr2Installed = False
+
+if useDummyData == True:
+    print("THE 'useDummyData' PARAMETER IS SET TO TRUE!")
+
+# defining various functions... yahoo!
+def formatStringFromJson(stringToFormat):
+    # this is mostly because I do not know any other good way to make the variables you can input more universal.
+    formattedString = stringToFormat.format(
+        topCompetitorName=topCompetitor,
+        bottomCompetitorName=bottomCompetitor,
+
+        topCompetitorPosition=topCompetitorPosition+1,
+        bottomCompetitorPosition=bottomCompetitorPosition+1,
+
+        topCompetitorSeed=topCompetitorSeed,
+        bottomCompetitorSeed=bottomCompetitorSeed,
+
+        topCompetitorPropagandaTitle = topCompetitorDict["propagandaTitle"],
+        bottomCompetitorPropagandaTitle = bottomCompetitorDict["propagandaTitle"],
+
+        topCompetitorRounds = topCompetitorDict["involvedRounds"],
+        bottomCompetitorRounds = bottomCompetitorDict["involvedRounds"],
+
+        topCompetitorByedRounds = topCompetitorDict["byedRounds"],
+        bottomCompetitorByedRounds = bottomCompetitorDict["byedRounds"],
+
+        topCompetitorAltText = topCompetitorDict["altText"],
+        bottomCompetitorAltText = bottomCompetitorDict["altText"],
+
+        roundNumber=roundNumber,
+        competitorQuantity = competitorQuantity,
+        pollQuantity = int(currentRoundCompetitorQuantity/2),
+        currentPoll = x+1,
+        currentRoundCompetitorQuantity = currentRoundCompetitorQuantity
+    )
+    return formattedString
+
+def makeIncrementingList(startValue, stopValue):
+    countingList = []
+    if startValue == stopValue:
+        countingList.append(startValue)
+    else:
+        for value in range(startValue, stopValue):
+            countingList.append(value)
+    return countingList
+
+
+def prettyPrintList(listToPrint, indexOffset):
+    for entry in range(len(listToPrint)):
+        print(f"{entry+indexOffset}: {listToPrint[entry]}")
+
+def prettyPrintDict(dictToPrint, zeroOffset):
+    theDetestableCountingVariable = zeroOffset
+    for entry in dictToPrint:
+        print(f"{theDetestableCountingVariable}. {entry}: {dictToPrint[entry]}")
+        theDetestableCountingVariable = theDetestableCountingVariable + 1
+
+def ynQuestion(askedQuestion):
+    acceptedYes = ["y", "Y", "yes", "Yes", "yEs", "YEs", "yeS", "YES"]
+    acceptedNo = ["n", "N", "no", "No", "nO", "NO"]
+    while True:
+        inputtedVariable = input(askedQuestion)
+        if inputtedVariable in acceptedYes:
+            saidYes = True
+            break
+        if inputtedVariable in acceptedNo:
+            saidYes = False
+            break
+        print("Please respond with \"yes\" or \"no.\"\nSee below for accepted responses")
+        print(f"For yes: {acceptedYes}")
+        print(f"For no: {acceptedNo}")
+    return saidYes
+
 
 def findFile(fileName, validFileLists):
     fileExists = False
@@ -31,9 +104,117 @@ def findFile(fileName, validFileLists):
     else:
         ValidFileName = fileToFind
     return ValidFileName
-validTumblrFileFormats = [".png", ".jpeg", ".webp", ".gif"]
 
+validTumblrImageFileFormats = [".png", ".jpeg", ".webp", ".gif"]
 
+def getValidInt(askedQuestion, minimumValue=None, maximumValue=None):
+    while True:
+        try:
+            inputtedVariable = int(input(askedQuestion))
+            if minimumValue is not None and maximumValue is not None:
+                if inputtedVariable < minimumValue or inputtedVariable > maximumValue:
+                    print(f"Please enter an integer in the inclusive range of {minimumValue} to {maximumValue}.")
+                    continue
+            elif minimumValue is not None:
+                if inputtedVariable < minimumValue:
+                    print(f"Please enter an integer greater than or equal to {minimumValue}.")
+                    continue
+            elif maximumValue is not None:
+                if inputtedVariable > maximumValue:
+                    print(f"Please enter an integer less than or equal to {maximumValue}.")
+                    continue
+            break
+        except ValueError:
+            print("Please type a valid integer!")
+    return inputtedVariable
+
+def editList(listToEdit, listName, maximumLength=None):
+    print(f"Editing the list {listName}")
+    while True:
+        print("Here are the entries, arranged by their list index:")
+        if len(listToEdit) == 0:
+            print("(there are no entries)")
+        else:
+            prettyPrintList(listToEdit, 0)
+        listEditMethod = getValidNumberSelection("\nWhat do you want to do?", ["Go Back", "Delete Entry", "Edit Entry", "Add Entry"])
+        match listEditMethod:
+            case 1:
+                break
+            case 2:
+                relevantIndex = getValidInt("Enter the index of the entry you wish to delete.\n(type a negative index to clear the list)\n", len(listToEdit)-1)
+                if relevantIndex < 0:
+                    if ynQuestion("Are you sure you want to clear this list? (y/n)\n") == True:
+                        print("OK! Clearing the list...")
+                        listToEdit = []
+                    else:
+                        print("OK! NOT clearing the list...")
+                else:
+                    listToEdit.pop(relevantIndex)
+            case 3:
+                relevantIndex = getValidInt("Enter the index of the entry you wish to edit.\n", 0, len(listToEdit)-1)
+                listToEdit[relevantIndex] = input(f"What would you like the entry at {relevantIndex} to say?")
+            case 4:
+                if maximumLength is None:
+                    newEntry = input("What entry would you like to add?\n")
+                    listToEdit.append(newEntry)
+                else:
+                    if len(listToEdit) >= maximumLength:
+                        if maximumLength == 1:
+                            print("This list cannot have more than 1 entry!")
+                        else:
+                            print(f"This list cannot have more than {maximumLength} entries!")
+                    else:
+                        newEntry = input("What entry would you like to add?\n")
+                        listToEdit.append(newEntry)
+    return listToEdit
+
+def editString(stringToEdit, stringName, minimumLength=None, maximumLength=None):
+    while True:
+        print(f"Current value of {stringName}:")
+        if len(stringToEdit) > 0:
+            print(f"\"{stringToEdit}\"")
+        else:
+            print("\"\" (nothing)")
+        inputtedVariable = input("What should its new value be?\n")
+        if minimumLength is not None and maximumLength is not None:
+            if len(inputtedVariable) < minimumLength or len(inputtedVariable) > maximumLength:
+                print(f"Please enter a string with a character count in the inclusive range of {minimumLength} to {maximumLength}.")
+                continue
+        elif minimumLength is not None:
+            if len(inputtedVariable) < minimumLength:
+                print(f"Please enter a string with a character count greater than or equal to {minimumLength}.")
+                continue
+        elif maximumLength is not None:
+            if len(inputtedVariable) > maximumLength:
+                print(f"Please enter a string with a character count less than or equal to {maximumLength}.")
+                continue
+        break
+    return stringToEdit
+
+def flipBool(boolToFlip):
+    if boolToFlip == True:
+        boolToFlip = False
+    else:
+        boolToFlip = True
+    return boolToFlip
+
+def getValidNumberSelection(askedQuestion, optionList, zeroOffset=1):
+    validAnswers = []
+    for options in range(len(optionList)):
+        validAnswers.append(options+zeroOffset)
+    while True:
+        try:
+            print(askedQuestion)
+            for x in range(len(optionList)):
+                print(f"{x+zeroOffset}. {optionList[x]}")
+            inputtedVariable = int(input(""))
+            if inputtedVariable in validAnswers:
+                break
+            print(f"Please input a valid answer.")
+        except ValueError:
+            print("Please type an integer!")
+    return inputtedVariable
+    
 # saving credentials for pytumblr2...
 if pytumblr2Installed == False:
     print("Skipping saving Tumblr credentials, because you don't have pytumblr2 installed!")
@@ -41,38 +222,33 @@ else:
     try:
         x = open("credentials.json","x")
         x.close()
-        while True:
-            response = input("Do you have valid credentials for accessing the Tumblr API? (y/n)\n")
-            match response:
-                case "y":
-                    validTumblrCredentials = True
-                    print("OK! (You probably want to copy/paste these)")
-                    consumerKey=input("What is your consumer key?\n")
-                    consumerSecret=input("What is your consumer secret?\n")
-                    oauthToken=input("What is your oauth token?\n")
-                    oauthSecret=input("What is your oauth secret?\n")
-                    postedBlog=input("Now... what is the url of the blog are these polls goint to be posted to?\n")
-                    clientInfo = {
-                        "hasCredentials": validTumblrCredentials,
-                        "consumerKey": consumerKey,
-                        "consumerSecret": consumerSecret,
-                        "oauthToken": oauthToken,
-                        "oauthSecret": oauthSecret,
-                        "postedBlog": postedBlog
-                    }
-                    break
-                case "n":
-                    validTumblrCredentials = False
-                    print("OK! You won't be able to post polls... obviously.")
-                    clientInfo = {
-                        "hasCredentials": validTumblrCredentials
-                    }
-                    break
-                case _:
-                    print("Type \"y\" or \"n\" please")
+        if ynQuestion("Do you have valid credentials for accessing the Tumblr API? (y/n)\n") == True:
+            print("OK! (You probably want to copy/paste these)")
+            consumerKey=input("What is your consumer key?\n")
+            consumerSecret=input("What is your consumer secret?\n")
+            oauthToken=input("What is your oauth token?\n")
+            oauthSecret=input("What is your oauth secret?\n")
+            postedBlog=input("Now... what is the url of the blog are these polls goint to be posted to?\n")
+            clientInfo = {
+                "hasCredentials": True,
+                "consumerKey": consumerKey,
+                "consumerSecret": consumerSecret,
+                "oauthToken": oauthToken,
+                "oauthSecret": oauthSecret,
+                "postedBlog": postedBlog
+            }
+            client = pytumblr2.TumblrRestClient(
+                consumerKey,
+                consumerSecret,
+                oauthToken,
+                oauthSecret
+            )
+            client.info()
+        else:
+            clientInfo = {"hasCredentials": False}
         # dunno how I feel about storing this stuff in plaintext... but it's not like there's anything else I can really do
         with open("credentials.json", "w") as f:
-            json.dump(clientInfo, f)
+            json.dump(clientInfo, f, indent=2)
     except FileExistsError:
         # loading saved credentials file
         print("Using saved credentials...")
@@ -93,40 +269,92 @@ else:
             )
             client.info()
 
+extantRoundNumber = False
 competitorQuantity = 0
 competitorNames = []
 propagandaTitles = []
-while True:
-    # getting what round it is
+
+# checking if a tournament data file exists
+try:
+    r = open(dataFileName, "r")
+    dataFileExists = True
+    response = False
     try:
-        roundNumber = int(input("What round is is it?\n(inputting a negative round will start a new competition)\n"))
-        break
-    except ValueError:
-        print
-if roundNumber < 0:
-    # (the tournament hasn't started yet)
-    print("You input a negative number, so we're starting a new competition!")
+        competitorList = json.load(r)
+    except json.decoder.JSONDecodeError:
+        print("The tournament data file can't be read!")
+        response = ynQuestion("Do you want to delete it? (y/n)\n(If not, the program will probably crash very soon!)\n")
+    r.close()
+    if response == True:
+        os.remove(dataFileName)
+        dataFileExists = False
+except FileNotFoundError:
+    dataFileExists = False
+
+# automatically starting a new competition if there is no file
+if dataFileExists == False:
+    roundNumber = -1
+# coming to terms with the file existing
+else:
     while True:
-        # Creating the data file
-        try:
-            f = open("tourny_data.json","x")
-            break
-        except FileExistsError:
-            print("There's already a file there...")
-            response = input("Delete it? (y/n)\n")
-            if response == "y":
-                print("Deleting it...")
-                os.remove("tourny_data.json")
-    while True:
-        # (getting how many competitors there are)
-        try:
-            competitorQuantity = int(input("How many competitors are there?\n"))
-            if competitorQuantity > 2:
+        response = getValidNumberSelection("Would you like to continue the current competition or create a new one?", ["Continue the current competition", "Start a new competition"])
+        match response:
+            case 1:
+                # getting the list of valid rounds
+                allowedRounds = []
+                allowedRoundsExclusive = []
+                minimumExclusiveRound = 0
+                for x in range(len(competitorList)-1):
+                    dictSection = competitorList[f"competitor{x+1}"]
+                    for y in dictSection["involvedRounds"]:
+                        if y not in allowedRounds:
+                            allowedRounds.append(y)
+                        if y != min(dictSection["involvedRounds"]):
+                            if y not in allowedRoundsExclusive:
+                                allowedRoundsExclusive.append(y)
+                
+                if len(allowedRoundsExclusive)>0:
+                    orderedValidRounds = makeIncrementingList(min(allowedRounds), max(allowedRoundsExclusive)+1)
+                else:
+                    orderedValidRounds = [min(allowedRounds)]
+
+                # back to getting a list of rounds
+                prettyValidRounds = []
+                for x in orderedValidRounds:
+                    prettyValidRounds.append(f"Round {x}")
+                roundNumber = getValidNumberSelection("What round is it?", prettyValidRounds, orderedValidRounds[0])
                 break
+            case 2:
+                if ynQuestion("Are you sure? The current tournament will be deleted! (y/n)\n") == True:
+                    print("OK! Deleting the file...")
+                    os.remove(dataFileName)
+                    roundNumber = -1
+                    break
+
+# starting a new tournament
+if roundNumber < 0:
+    startedNewTournament = True
+    print("Starting a new tournament!")
+    # setting a bunch of random default data
+    tournamentType = "Single Elimination"
+    pollQuestion = "Which competitor deserves to win this competition the most?"
+    pollTags = ["tumblr tournament", "poll", "polls", "round {roundNumber}", "{topCompetitorName}", "{bottomCompetitorName}"]
+    propagandaPlaceholder = "(no propaganda submitted)"
+    # getting number of competitors
+    while True:
+        try:
+            competitorQuantity = int(input(f"How many competitors are there?\n"))
+            if competitorQuantity < 2:
+                print("You can't have a competition with less than 2 competitors!")
             else:
-                print("You have to have more than 2 competitors!")
+                break
         except ValueError:
-            print("That's not even an integer!")
+            print("Type an integer, please!")
+    if competitorQuantity == 2:
+        finalRound = 1
+    else:
+        finalRound = -1
+    # figuring out byes
     powerOf2UpperBound = 1
     while powerOf2UpperBound < competitorQuantity:
         powerOf2LowerBound = powerOf2UpperBound
@@ -136,104 +364,192 @@ if roundNumber < 0:
         byes = competitorQuantity
     else:
         byes = byesButBad
-    match byes:
+    match byesButBad:
         case 0:
-            print("The amount of competitors is a power of 2, so all of them will get byed from round 0.")
+            print("The amount of competitors is a power of 2, so all of them will get byed from round 0!")
+            lowestRound = 1
         case 1:
             print("1 bye will be used for round 0!")
+            lowestRound = 0
         case _:
             print(f"{byes} byes will be used for round 0!")
-    # adding competitors
-    validAnswers = [1,2,3,4,5]
-    while True:
-        seedingMethod = int(input("By the way... how do you want to seed them?\n1. No Seeding\n2. Random Seeding\n3. Standard Seeding\n4. Cohort Randomized Seeding\n5. Equal Gap Seeding\n"))
-        if seedingMethod in validAnswers:
-            break
+            lowestRound = 0
+    # getting seeding method
+    seedingMethod = getValidNumberSelection("How should the competitors be seeded?", ["No Seeding", "Random Seeding", "Standard Seeding", "Cohort Randomized Seeding", "Equal Gap Seeding"])
+    # setting some formatting data
+    if ynQuestion("Should there be competitor images in the posted polls? (y/n)\n") == True:
+        print("OK! Put images in the /assets directory of wherever you have this python file!")
+        useCompetitorImages = True
+        needsImageDirectory = True
+    else:
+        print("OK! No competitor images will be used!")
+        useCompetitorImages = False
+        needsImageDirectory = False
+    response = getValidNumberSelection("What Should the header style be?", ["No Header", "Text Header", "Image Header"])
+    match response:
+        case 1:
+            print("OK! there will be no header!")
+            headerStyle = "none"
+            headerText = False
+        case 2:
+            print("OK!")
+            headerStyle = "text"
+            headerText = input("What should the header say?\n")
+        case 3:
+            print("OK! Put the image you want to use in the /assets directory of wherever you have this python file!")
+            headerStyle = "image"
+            headerText = False
+            needsImageDirectory = True
+
+    # creating dummy post content
+    postFormat = []
+    # dealing with headings...
+    match headerStyle:
+        case "none":
+            blocksBeforePoll = 0
+            useHeaderImage = False
+        case "text":
+            blocksBeforePoll = 1
+            useHeaderImage = False
+            postFormat.append({
+                "type": "text",
+                "text": headerText,
+                "subtype": "heading1"
+            })
+        case "image":
+            blocksBeforePoll = 1
+            postFormat.append({
+                "type":"image",
+                "known_file_type": False,
+                "media": [{
+                    "type": "images/png",
+                    "identifier": "heading"
+                }],
+                "alt_text": "Header"
+            })
+    
+    print(f"Blocks before poll: {blocksBeforePoll}")
+    # dealing with competitor images...
+    if useCompetitorImages == True:
+        imageBlocks = [blocksBeforePoll, blocksBeforePoll+1]
+        blocksBeforePoll = blocksBeforePoll+2
+        postFormat.append({
+                "type":"image",
+                "media": [{
+                    "type": "images/png",
+                    "identifier": "topCompetitor"
+                }],
+                "alt_text": "{topCompetitorAltText}"
+        })
+        postFormat.append({
+                "type":"image",
+                "media": [{
+                    "type": "images/png",
+                    "identifier": "bottomCompetitor"
+                }],
+                "alt_text": "{bottomCompetitorAltText}"
+        })
+    else:
+        imageBlocks = []
+
+    # setting up poll
+    postFormat.append({
+        "type": "poll",
+        "question": pollQuestion,
+        "client_id": "Tumblr asks you to give a poll UUID, but then ignores it and creates its own. Isn't that odd?",
+        "answers": [{"answer_text": "{topCompetitorName}"}, {"answer_text": "{bottomCompetitorName}"}],
+        "settings":{
+            "closed_status": "closed-after",
+            "expire_after": 0
+        }
+    })
+  
+    # propaganda and relevant titles
+    postFormat.append({
+        "type": "text",
+        "text": "{topCompetitorPropagandaTitle}",
+        "subtype": "heading2"
+    })
+
+    postFormat.append({
+        "type": "propaganda",
+        "propaganda": "top"
+    })
+
+    postFormat.append({
+        "type": "text",
+        "text": "{bottomCompetitorPropagandaTitle}",
+        "subtype": "heading2"
+    })
+    postFormat.append({
+        "type": "propaganda",
+        "propaganda": "bottom"
+    })
+
+    totalBlocks = len(postFormat)
+
+    # setting up dummy layout
+    display = []
+    block = 0
+    while block < totalBlocks:
+        if block in imageBlocks:
+            display.append({
+                "blocks": [block, block+1]
+            })
+            block = block + 2
         else:
-            print("That's not an option!")
-    tournamentType = "Single Elimination"
-    tempCounter = 0
-    useCompetitorImages = False
-    headerStyle = "none"
-    headerText = False
-    pollQuestion = "Which competitor deserves to win this competition the most?"
-    pollTags = ["tumblr tournament", "poll", "polls"]
-    propagandaPlaceholder = "(no propaganda submitted)"
-    while True:
-        response = input("Should there be competitor images in the posted polls? (y/n)\n")
-        match response:
-            case "y":
-                print("OK! Put images in the /images directory of wherever you have this python file!")
-                useCompetitorImages = True
-                needsImageDirectory = True
-                break
-            case "n":
-                print("OK! No competitor images will be used!")
-                useCompetitorImages = False
-                needsImageDirectory = False
-                break
-            case _:
-                print('Type "y" or "n," please.')
-    while True:
-        response = input("What Should the header style be?\n1. No header\n2. Text\n3. Image\n")
-        match response:
-            case "1":
-                print("OK! there will be no header!")
-                headerStyle = "none"
-                headerText = False
-                break
-            case "2":
-                print("OK!")
-                headerStyle = "text"
-                headerText = input("What should the header say?\n")
-                break
-            case "3":
-                print("OK! Put the image you want to use in the /images directory of wherever you have this python file!")
-                headerStyle = "image"
-                headerText = False
-                needsImageDirectory = True
-                break
-            case _:
-                print('Type one of the options, please.')
-    print("For best results, put the competitors in order of the highest seed to the lowest seed.")
+            display.append({
+                "blocks": [block]
+            })
+            block = block+1
+    postLayout = [
+        {
+            "type": "rows",
+            "display": display,
+            "truncate_after": blocksBeforePoll
+        }
+    ]
+
+    # setting up dummy media sources
+    postMediaSources = {}
+    if headerStyle == "image":
+        postMediaSources["heading"] = "assets/header"
+    if useCompetitorImages == True:
+        postMediaSources["topCompetitor"] = "assets/{topCompetitorPosition}"
+        postMediaSources["bottomCompetitor"] = "assets/{bottomCompetitorPosition}"
+
+    #all this "dummy" stuff... it's purely for the purpose of setting up a, well, "dummy" pseudo-npf post that the program understands...
+    #all the logic for converting this into an actual tumblr post is lower down
+
+    # setting up seed stuff
     seedList = []
     for x in range(competitorQuantity):
         seedList.append(x+1)
-    # setting up byes
     possibleFakeSeeds = []
-    if byes == 0:
-        possibleFakeSeedQuantity = competitorQuantity*2
-    else:
-        possibleFakeSeedQuantity = powerOf2UpperBound
-    for x in range(possibleFakeSeedQuantity):
+    for x in range(powerOf2UpperBound):
         possibleFakeSeeds.append(x+1)
-    print("possible fake seeds:", possibleFakeSeeds)
     fakeSeeds = []
     for x in possibleFakeSeeds:
         if x not in seedList:
             fakeSeeds.append(x)
-    print("fake seeds:", fakeSeeds)
     if byes == competitorQuantity:
         safeSeeds = seedList
     else:
         safeSeeds = seedList[0:powerOf2LowerBound]
-    print("safe seeds:", safeSeeds)
     unsafeSeeds = []
     for x in seedList:
         if x not in safeSeeds:
             unsafeSeeds.append(x)
-    print("unsafe seeds:", unsafeSeeds)
-    print(byes, len(unsafeSeeds)*2)
-    while tempCounter < competitorQuantity:
-        tempCounter = tempCounter+1
+    # competitor entry
+    for x in range(competitorQuantity):
         if useDummyData == True:
-            tempNameHolder = str(tempCounter)
+            currentCompetitor = str(x+1)
         else:
-            tempNameHolder = input("What is the name of competitor "+str(tempCounter)+"?\n")
-        competitorNames.append(tempNameHolder)
-        tempPropagandaTitle = tempNameHolder
-        propagandaTitles.append(tempPropagandaTitle)
-    listPos = 0
+            currentCompetitor = input(f"What is the name of competitor {x+1}?\n")
+        competitorNames.append(currentCompetitor)
+        currentCompetitorPropagandaTitle = currentCompetitor
+        propagandaTitles.append(currentCompetitorPropagandaTitle)
+    # arrangement of seeds via seeding methods
     match seedingMethod:
         case 1:
             #returns order the competitors were put in
@@ -337,11 +653,8 @@ if roundNumber < 0:
                     for y in matchupList[x]:
                         constructedSeedList.append(y)
             intermediateSeedList = constructedSeedList
-        case _:
-            # catch-all
-            print("I haven't done that yet :(")
+    # dealing with byes, if applicable
     if byes != competitorQuantity:
-        # positioning unsafe seeds intelligently
         print("Intermediate seed list:", intermediateSeedList)
         finalSeedList = intermediateSeedList
         if seedingMethod in [3, 4, 5]:
@@ -398,6 +711,7 @@ if roundNumber < 0:
                 if x not in seedsToNotBye:
                     seedsToBye.append(x)
         else:
+            # anything else
             finalSeedList = intermediateSeedList
             actuallyUnsafeSeeds = []
             seedsToNotBye = []
@@ -424,1018 +738,540 @@ if roundNumber < 0:
     else:
         seedsToBye = seedList
         finalSeedList = intermediateSeedList
-    # saving various competition info
-    competitorDict = {
-        "tournamentInfo": {
-            "type": tournamentType,
-            "useCompetitorImages": useCompetitorImages,
-            "headerStyle": headerStyle,
-            "headerImageAltText": False,
-            "headerText": headerText,
-            "defaultPropaganda": propagandaPlaceholder,
-            "pollQuestion": pollQuestion,
-            "pollTags": pollTags,
-            "extraAnswerQuantity": 0,
-            "extraAnswers": [],
-            "byedSeeds": seedsToBye
+    # saving tournament data to a variable
+    competitorList = {
+        "Tournament Info": {
+            "Constants": {
+                "type": tournamentType,
+                "byedSeeds": seedsToBye,
+                "totalRounds": int(math.log(powerOf2UpperBound, 2))
+            },
+            "Parameters": {
+                "placeholderImageAltText": "Unknown",
+                "defaultPropaganda": propagandaPlaceholder,
+                "postData": {
+                    "content": postFormat,
+                    "layout": postLayout,
+                    "mediaSources": postMediaSources,
+                    "postTags": pollTags
+                }
+            }
         }
     }
-    # save data to json file
     finalOrder = []
     for x in range(len(finalSeedList)):
-            if autoAltText == True:
-                altText = f"{competitorNames[int(finalSeedList[x]-1)]}"
-            else:
-                altText = False
-            if finalSeedList[x] in seedsToBye:
-                startRound = 1
-                gotBye = True
-            else:
-                startRound = 0
-                gotBye = False
-            dictSection = {
-            "position": x+1,
-            "seed": finalSeedList[x],
-            "lastRound": startRound,
-            "gotBye": gotBye,
-            "name": competitorNames[int(finalSeedList[x]-1)],
-            "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
-            "propaganda":[],
-            "altText": altText
-            }
-            competitorDict["competitor"+str(x+1)] = dictSection
-            finalOrder.append(competitorNames[int(finalSeedList[x]-1)])
-    competitorList = json.dumps(competitorDict, indent=2)
-    f = open("tourny_data.json", "w")
-    f.write(competitorList+"\n")
-    f.close()
-    for x in range(competitorQuantity):
+        altText = f"{competitorNames[int(finalSeedList[x]-1)]}"
         if finalSeedList[x] in seedsToBye:
-            print(f"{x+1}. {finalOrder[x]} (byed from round 0)")
+            startRound = 1
+            gotBye = [0]
         else:
-            print(f"{x+1}. {finalOrder[x]}")
-else:
-    # if tournament has started
-    try:
-        tempCounter = 0
-        f = open("tourny_data.json")
-        competitorList = json.load(f)
-        f.close()
-        # (getting how many competitors there are)
-        competitorQuantity = len(competitorList)-1
-        totalRounds = int(math.log(competitorQuantity, 2))
-        competitionSettings = competitorList["tournamentInfo"]
-        competitionType = competitionSettings["type"]
-        useCompetitorImages = competitionSettings["useCompetitorImages"]
-        headerStyle = competitionSettings["headerStyle"]
-        if headerStyle == "text":
-            headerText = competitionSettings["headerText"]
-        if headerStyle == "image":
-            headerAltText = competitionSettings["headerImageAltText"]
-        propagandaPlaceholder = competitionSettings["defaultPropaganda"]
-        pollQuestion = competitionSettings["pollQuestion"]
-        pollTags = competitionSettings["pollTags"]
-        extraAnswerQuantity = competitionSettings["extraAnswerQuantity"]
-        extraAnswers = competitionSettings["extraAnswers"]
-        # Finding some more information
-        powerOf2UpperBound = 1
-        while powerOf2UpperBound < competitorQuantity:
-            powerOf2LowerBound = powerOf2UpperBound
-            powerOf2UpperBound = powerOf2UpperBound * 2
-        # finding all the competitors that made it to whatever round and printing a list
-        finalOrder = []
-        finalOrderPos = []
-        finalSeedList = []
-        originalSeedList = []
-        originalNameList = []
-        round0Positions = []
-        competitorCounter = 0
-        notByed = []
-        byes = 0
-        # finding bye info
-        for x in range(len(competitorList)-1):
-            dictSection = competitorList[f"competitor{x+1}"]
-            if dictSection["gotBye"] == True:
-                print(f"competitor {x} has a bye!")
-                byes = byes+1
-                notByed.append(False)
-                notByed.append(False)
-            else:
-                print(f"competitor {x} exists and doesn't have a bye!")
-                notByed.append(dictSection["name"])
-        # finding info for current round
-        while tempCounter < competitorQuantity:
-            tempCounter = tempCounter + 1
-            dictSection = competitorList["competitor"+str(tempCounter)]
-            originalSeedList.append(dictSection["seed"])
-            originalNameList.append(dictSection["name"])
-            if dictSection["lastRound"] >= roundNumber:
-                if roundNumber == 0:
-                    gotBye = dictSection["gotBye"]
-                    if gotBye == False:
-                        competitorCounter = competitorCounter + 1
-                        finalOrder.append(dictSection["name"])
-                        finalOrderPos.append(dictSection["position"])
-                        finalSeedList.append(dictSection["seed"])
-                else:
-                    competitorCounter = competitorCounter + 1
-                    finalOrder.append(dictSection["name"])
-                    finalOrderPos.append(dictSection["position"])
-                    finalSeedList.append(dictSection["seed"])
-        currentRoundCompetitorQuantity = len(finalOrder)
-        print(f"Here are all the competitors that are in round {roundNumber}:")
-        for x in range(currentRoundCompetitorQuantity):
-            print(f"{x+1}. {finalOrder[x]}")
-        print("")
-        # What comes after info is found
-        while True:
-            response = str(input("1. Post polls for these competitors\n2. Record results of this round\n3. Render chart for this round\n4. Edit tournament and competitor data\n"))
-            match response:
-                case "1":
-                    # posting polls for existing matchup
-                    while True:
-                        try:
-                            pollTimeLength = int(input("How many seconds should the polls run for?\n604800 (7 days) is the max value and 86400 (1 day) is the minimum\n"))
-                            break
-                        except ValueError:
-                            print("That isn't a valid answer!")
-                    while True:
-                        try:
-                            firstMatchup = int(input(f"What poll do you want to start at?\n(poll 1 is the first poll of this round and poll {int(currentRoundCompetitorQuantity/2)} is the last.)\n"))
-                            lastMatchup = int(input(f"What poll do you want to end at?\n(poll 1 is the first poll of this round and poll {int(currentRoundCompetitorQuantity/2)} is the last.)\n"))
-                            validStartAndEndPoints = False
-                            if firstMatchup<=int(currentRoundCompetitorQuantity/2):
-                                if lastMatchup<=int(currentRoundCompetitorQuantity/2):
-                                    if firstMatchup<=lastMatchup:
-                                        break
-                            print("Make sure that both bounds are in the amount of matchups there are, and that the final poll is after or the same as the first one!")
-                        except ValueError:
-                            print("try again!")
+            startRound = 0
+            gotBye = []
+        dictSection = {
+        "position": x+1,
+        "seed": finalSeedList[x],
+        "involvedRounds": [startRound],
+        "byedRounds": gotBye,
+        "name": competitorNames[int(finalSeedList[x]-1)],
+        "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
+        "propaganda":[],
+        "altText": altText
+        }
+        competitorList["competitor"+str(x+1)] = dictSection
+        finalOrder.append(competitorNames[int(finalSeedList[x]-1)])
+    competitorDict = json.dumps(competitorList, indent=2)
+    w = open(dataFileName, "w")
+    w.write(competitorDict)
+    w.close()
+    roundNumber = lowestRound
 
-                    while True:
-                        response = input("What should happen to these polls?\n1. Immediately publish them\n2. Save them as drafts\n3. Put them in the queue\n")
-                        match response:
-                            case "1":
-                                postMethod = "published"
-                                break
-                            case "2":
-                                postMethod = "draft"
-                                break
-                            case "3":
-                                postMethod = "queue"
-                                break
-                            case _:
-                                print("Type the number for a valid option, please!")
-                    useAnyImages = False
-                    if headerStyle == "image":
-                        useAnyImages = True
-                    if useCompetitorImages == True:
-                        useAnyImages = True
-                    for x in range(firstMatchup-1, lastMatchup):
-                        matchupPos = 2*x
-                        topCompetitor = finalOrder[matchupPos]
-                        topCompetitorSeed=finalSeedList[matchupPos]
-                        bottomCompetitor = finalOrder[matchupPos+1]
-                        bottomCompetitorSeed = finalSeedList[matchupPos+1]
-                        topCompetitorPosition = originalSeedList.index(topCompetitorSeed)
-                        topCompetitorDict = competitorList[f"competitor{topCompetitorPosition+1}"]
-                        bottomCompetitorPosition = originalSeedList.index(bottomCompetitorSeed)
-                        bottomCompetitorDict = competitorList[f"competitor{bottomCompetitorPosition+1}"]
-                        print(f"Match {x+1}:\n{topCompetitor} vs. {bottomCompetitor}\n")
-                        # handling post layout
-                        postFormat = []
-                        match headerStyle:
-                            case "none":
-                                blocksBeforePoll = 0
-                                useHeaderImage = False
+
+# dealing with a competition in progress
+if roundNumber >= 0:
+    # loading competition data
+    f = open(dataFileName)
+    competitorList = json.load(f)
+    f.close()
+    # this sucks. it is so bad. unfortuanately i am recovering from being chokeslammed so i can't write something better
+    f = open(dataFileName)
+    competitorListCloneForSafekeeping = json.load(f)
+    f.close()
+    tournamentInfo = competitorList["Tournament Info"]
+    tournamentOptions = tournamentInfo["Parameters"]
+    tournamentConstants = tournamentInfo["Constants"]
+    competitorQuantity = len(competitorList)-1
+
+    totalRounds = tournamentConstants["totalRounds"]
+    competitionType = tournamentConstants["type"]
+    placehoderImageAltText = tournamentOptions["placeholderImageAltText"]
+    propagandaPlaceholder = tournamentOptions["defaultPropaganda"]
+    # calculating some more info on the fly
+    powerOf2UpperBound = 1
+    while powerOf2UpperBound < competitorQuantity:
+        powerOf2LowerBound = powerOf2UpperBound
+        powerOf2UpperBound = powerOf2UpperBound * 2
+    # Setting up variables for creating a list of competitors
+    finalOrder = []
+    finalOrderPos = []
+    finalSeedList = []
+    originalSeedList = []
+    originalNameList = []
+    round0Positions = []
+    competitorCounter = 0
+    notByed = []
+    byes = 0
+    # finding bye info
+    for x in range(len(competitorList)-1):
+        dictSection = competitorList[f"competitor{x+1}"]
+        originalSeedList.append(dictSection["seed"])
+        originalNameList.append(dictSection["name"])
+        if 0 in dictSection["byedRounds"]:
+            print(f"competitor {x} is byed from round 0!")
+            byes = byes+1
+            notByed.append(False)
+            notByed.append(False)
+        else:
+            print(f"competitor {x} exists and doesn't have a bye this round!")
+            notByed.append(dictSection["name"])
+        if max(dictSection["involvedRounds"]) >= roundNumber:
+            if roundNumber not in dictSection["byedRounds"]:
+                competitorCounter = competitorCounter + 1
+                finalOrder.append(dictSection["name"])
+                finalOrderPos.append(dictSection["position"])
+                finalSeedList.append(dictSection["seed"])
+    currentRoundCompetitorQuantity = len(finalOrder)
+    print(f"Here are all the competitors that are in round {roundNumber}:")
+    prettyPrintList(finalOrder, 1)
+
+    if len(finalOrder) == 1:
+        finalRoundSelected = True
+    else:
+        finalRoundSelected = False
+
+    
+    while True:
+        if finalRoundSelected == True:
+            selection = getValidNumberSelection("\nThis is the final round! What do you want to do?", ["Render chart for this round", "Edit tournament and competitor data"])
+            response = selection+2
+        else:
+            response = getValidNumberSelection("\nWhat do you want to do?", ["Post polls for these competitors", "Record results of this round", "Render chart for this round", "Edit tournament and competitor data"])
+        match response:
+            case 1:
+                # posting polls for existing matchup
+                selection = getValidNumberSelection("How long do you want the poll to run for?", ["1 Day", "3 Days", "7 Days (1 Week)"])
+                secondsPerDay = 86400
+                # Unfortunately Tumblr caps you at having a poll for exactly 7 days, 3 days, or 1 day :(
+                # this implementation is mostly since I don't wanna have to go through all the work of pulling up a calculator and putting numbers in... alas
+                match selection:
+                    case 1:
+                        pollTimeLength = secondsPerDay
+                    case 2:
+                        pollTimeLength = 3 * secondsPerDay
+                    case 3:
+                        pollTimeLength = 7 * secondsPerDay
+                while True:
+                    try:
+                        firstMatchup = getValidInt(f"What poll do you want to start at?\n(poll 1 is the first poll of this round and poll {int(currentRoundCompetitorQuantity/2)} is the last.)\n")
+                        lastMatchup = getValidInt(f"What poll do you want to end at?\n(poll 1 is the first poll of this round and poll {int(currentRoundCompetitorQuantity/2)} is the last.)\n")
+                        validStartAndEndPoints = False
+                        if firstMatchup<=int(currentRoundCompetitorQuantity/2):
+                            if lastMatchup<=int(currentRoundCompetitorQuantity/2):
+                                if firstMatchup<=lastMatchup:
+                                    break
+                        print("Make sure that both bounds are in the amount of matchups there are, and that the final poll is after or the same as the first one!")
+                    except ValueError:
+                        print("Make sure you typed an integer!")
+                selection = getValidNumberSelection("What should happen to these polls?", ["Immediately publish them", "Save them as drafts", "Put them in the queue"])
+                match selection:
+                    case 1:
+                        postMethod = "published"
+                    case 2:
+                        postMethod = "draft"
+                    case 3:
+                        postMethod = "queue"
+                for x in range(firstMatchup-1, lastMatchup):
+                    matchupPos = 2*x
+                    topCompetitor = finalOrder[matchupPos]
+                    topCompetitorSeed=finalSeedList[matchupPos]
+                    bottomCompetitor = finalOrder[matchupPos+1]
+                    bottomCompetitorSeed = finalSeedList[matchupPos+1]
+
+                    topCompetitorDict={}
+                    bottomCompetitorDict={}
+
+                    topCompetitorPosition = originalSeedList.index(topCompetitorSeed)
+                    topCompetitorDict = competitorList[f"competitor{topCompetitorPosition+1}"]
+                    bottomCompetitorPosition = originalSeedList.index(bottomCompetitorSeed)
+                    bottomCompetitorDict = competitorList[f"competitor{bottomCompetitorPosition+1}"]
+
+                    print(f"Match {x+1}:\n{topCompetitor} vs. {bottomCompetitor}\n")
+                    
+                    # convert dummy post format to actual tumblr NPF
+                    dummyPostData = tournamentOptions["postData"]
+
+                    # converting tags
+                    actualPostTags = []
+                    for y in dummyPostData["postTags"]:
+                        actualPostTags.append(formatStringFromJson(y))
+
+                    # converting post content
+                    expandedRanges = {}
+                    loopNumber = 0
+                    actualPostContent = []
+                    # WHY IS IT OVERWRITING THE DUMMY VALUES???? I am going to chokeslam whoever designed this system.
+                    for y in range(len(competitorList["Tournament Info"]["Parameters"]["postData"]["content"])):
+                        
+                        competitorList = competitorListCloneForSafekeeping
+                        dummyBlock = dummyPostData["content"][y]
+
+                        match dummyBlock["type"]:
                             case "text":
-                                blocksBeforePoll = 1
-                                useHeaderImage = False
-                                postFormat.append({
-                                    "type": "text",
-                                    "text": headerText,
-                                    "subtype": "heading1"
-                                })
+                                dummyBlock["text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["text"])
                             case "image":
-                                blocksBeforePoll = 1
-                                useHeaderImage = True
-                                if headerAltText == False:
-                                    postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "heading"
-                                        }],
-                                    })
-                                else:
-                                    postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "heading"
-                                        }],
-                                        "alt_text": headerAltText
-                                    })
-                        if useCompetitorImages == True:
-                            competitorImageBlocks = [blocksBeforePoll,blocksBeforePoll+1]
-                            blocksBeforePoll = blocksBeforePoll + 2
-                            if topCompetitorDict["altText"] == False:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "topcompetitor"
-                                        }]
-                                    })
-                            else:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "topcompetitor"
-                                        }],
-                                        "alt_text": topCompetitorDict["altText"]
-                                    })
-                            if bottomCompetitorDict["altText"] == False:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "bottomcompetitor"
-                                        }]
-                                    })
-                            else:
-                                postFormat.append({
-                                        "type":"image",
-                                        "media": [{
-                                            "type": "images/png",
-                                            "identifier": "bottomcompetitor"
-                                        }],
-                                        "alt_text": bottomCompetitorDict["altText"]
-                                    })
-                        else:
-                            competitorImageBlocks = False
-                        actualPollTags = [f"round {roundNumber}", f"{topCompetitor}", f"{bottomCompetitor}"]
-                        
-                        for y in pollTags:
-                            actualPollTags.append(y)
-                        
-                        pollOptions = [
-                            {
-                                "answer_text": topCompetitor
-                            },
-                            {
-                                "answer_text": bottomCompetitor
-                            }
-                        ]
-                        if extraAnswerQuantity > 0:
-                            for y in range(extraAnswerQuantity):
-                                pollOptions.append({
-                                    "answer_text": extraAnswers[y]
-                                })
-                        
-                        postFormat.append({
-                            "type": "poll",
-                            "question": pollQuestion,
-                            "client_id": "Tumblr forces you to give a poll UUID, but then ignores it and creates its own. Isn't that odd?",
-                            "answers": pollOptions,
-                            "settings":{
-                                "closed_status": "closed-after",
-                                "expire_after": pollTimeLength
-                            }
-                        })
+                                dummyBlock["alt_text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["alt_text"])
+                                if findFile(formatStringFromJson(dummyPostData["mediaSources"][dummyBlock['media'][0]["identifier"]]), validTumblrImageFileFormats) == False:
+                                    dummyBlock["alt_text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["placeholderImageAltText"])
+                            case "poll":
+                                dummyAnswers = []
+                                for z in range(len(dummyBlock["answers"])):
+                                    answerSection = dummyBlock["answers"][z]
+                                    answerSection["answer_text"]=formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["answers"][z]["answer_text"])
+                                    dummyAnswers.append(answerSection)
+                                dummyBlock["answers"] = dummyAnswers
+                                dummyBlock["question"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["question"])
+                                dummyBlock["settings"]["expire_after"] = pollTimeLength
+                            case "propaganda":
+                                initialBlock = loopNumber
+                                expandedRanges[loopNumber] = {
+                                    "createNewRows": True,
+                                    "initialPosition": initialBlock
+                                }
+                                additionalBlocks = 0
+                                match dummyBlock["propaganda"]:
+                                    case "top":
+                                        if len(topCompetitorDict["propaganda"]) == 0:
+                                            dummyBlock = {"type": "text", "text": tournamentOptions["defaultPropaganda"]}
+                                        else:
+                                            additionalBlocks = len(topCompetitorDict["propaganda"])-1
+                                            for z in range(len(topCompetitorDict["propaganda"])):
+                                                propagandaSection = topCompetitorDict["propaganda"][z]
+                                                actualPostContent.append({"type": "text", "text": f"“{propagandaSection}”"})
+                                        expandedRanges[loopNumber]["finalPosition"]=initialBlock+additionalBlocks
+                                        expandedRanges[loopNumber]["additionalBlocks"]=additionalBlocks
+                                    case "bottom":
+                                        if len(bottomCompetitorDict["propaganda"]) == 0:
+                                            dummyBlock = {"type": "text", "text": tournamentOptions["defaultPropaganda"]}
+                                        else:
+                                            additionalBlocks = len(bottomCompetitorDict["propaganda"])-1
+                                            for z in range(len(bottomCompetitorDict["propaganda"])):
+                                                propagandaSection = bottomCompetitorDict["propaganda"][z]
+                                                actualPostContent.append({"type": "text", "text": f"“{propagandaSection}”"})
+                                        expandedRanges[loopNumber]["finalPosition"]=initialBlock+additionalBlocks
+                                        expandedRanges[loopNumber]["additionalBlocks"]=additionalBlocks
+                            case _:
+                                pass
+                        if dummyBlock["type"] != "propaganda":
+                            actualPostContent.append(dummyBlock)
+                        loopNumber = loopNumber+1
 
-                        totalBlocks = blocksBeforePoll + 1
-                        # also, a reminder to myself... Since tumblr blocks start at 0 and it starts at 1, this "blocksBeforePoll" viariable is ALSO the block that the poll will be on.
-                        # setting up propaganda... there still has to be a better way than two very similar things run one after the other
-                        # for top competitor
-                        totalBlocks = totalBlocks+1
-                        postFormat.append({
-                            "type": "text",
-                            "text": topCompetitorDict["propagandaTitle"],
-                            "subtype": "heading2"
-                        })
-                        if len(topCompetitorDict["propaganda"])>0:
-                            for y in topCompetitorDict["propaganda"]:
-                                totalBlocks = totalBlocks+1
-                                postFormat.append({
-                                    "type": "text",
-                                    "text": f"“{y}”"
-                                })
+                    # fixing layout...
+                    if len(expandedRanges) == 0:
+                        actualPostLayout = dummyPostData["layout"]
+                    else:
+                        actualPostLayout = []
+                        expansionPositions = []
+                        lastBlock=-1
+                        for y in expandedRanges:
+                            expansionPositions.append(y)
+                        for y in dummyPostData["layout"]:
+                            # this is a list for whatever reason...
+                            layoutSection = y
+                            sectionDisplay = []
+                            try:
+                                initialTruncateAfterBlock = layoutSection["truncate_after"]
+                            except KeyError:
+                                initialTruncateAfterBlock = False
+                            for z in y["display"]:
+                                blocksThisRow = 0
+                                currentRow = []
+                                for block in z["blocks"]:
+                                    blocksThisRow = blocksThisRow+1
+                                    if block in expansionPositions:
+                                        if expandedRanges[block]["createNewRows"] == False:
+                                            standardRowAdding = True
+                                            blocksThisRow = blocksThisRow+expandedRanges[block]["additionalBlocks"]
+                                        else:
+                                            standardRowAdding = False
+                                            for newBlocks in range(expandedRanges[block]["additionalBlocks"]+1):
+                                                lastBlock = lastBlock+1
+                                                sectionDisplay.append({"blocks": [lastBlock]})
+                                    else:
+                                        standardRowAdding = True
+                                if standardRowAdding == True:
+                                    for block in range(blocksThisRow):
+                                        lastBlock = lastBlock+1
+                                        currentRow.append(lastBlock)
+                                    sectionDisplay.append({"blocks": currentRow})
+                            layoutSection["display"]=sectionDisplay
+                            if initialTruncateAfterBlock is not False:
+                                truncateOffset = 0
+                                for z in expansionPositions:
+                                    if z <= initialTruncateAfterBlock:
+                                        truncateOffset=truncateOffset+expandedRanges[z]["additionalBlocks"]
+                                layoutSection["truncate_after"] = layoutSection["truncate_after"] + truncateOffset
+                            actualPostLayout.append(layoutSection)
+
+                    # setting up media sources...
+                    actualMediaSources = {}
+                    for y in dummyPostData["mediaSources"]:
+                        foundFile = findFile(formatStringFromJson(dummyPostData["mediaSources"][y]), validTumblrImageFileFormats)
+                        if foundFile == False:
+                            foundFile = findFile("assets/placeholder", validTumblrImageFileFormats)
+                        actualMediaSources[y] = foundFile
+
+                    # creating post
+                    if actuallyPost == True:
+                        if len(actualPostTags) > 0:
+                            client.create_post(
+                                blogname=postedBlog,
+                                tags= actualPostTags,
+                                state= postMethod,
+                                content = actualPostContent,
+                                layout = actualPostLayout,
+                                media_sources = actualMediaSources
+                            )
                         else:
-                            totalBlocks = totalBlocks+1
-                            postFormat.append({
-                                "type": "text",
-                                "text": propagandaPlaceholder
-                            })
-                        # for bottom competitor
-                        totalBlocks = totalBlocks+1
-                        postFormat.append({
-                            "type": "text",
-                            "text": bottomCompetitorDict["propagandaTitle"],
-                            "subtype": "heading2"
-                        })
-                        if len(bottomCompetitorDict["propaganda"])>0:
-                            for y in bottomCompetitorDict["propaganda"]:
-                                totalBlocks = totalBlocks+1
-                                postFormat.append({
-                                    "type": "text",
-                                    "text": f"“{y}”"
-                                })
-                        else:
-                            totalBlocks = totalBlocks+1
-                            postFormat.append({
-                                "type": "text",
-                                "text": propagandaPlaceholder
-                            })
-                        # setting up post layout
-                        postDisplayBlocks = []
-                        if headerStyle == "none":
-                            currentBlock = 0
-                        else:
-                            postDisplayBlocks.append({"blocks": [0]})
-                            currentBlock = 1
-                        if useCompetitorImages == True:
-                            postDisplayBlocks.append({"blocks": competitorImageBlocks})
-                            currentBlock = competitorImageBlocks[-1]+1
-                        for y in range(currentBlock, totalBlocks):
-                            postDisplayBlocks.append({"blocks": [y]})
-                        postLayout = [
-                            {
-                                "type": "rows",
-                                "display": postDisplayBlocks,
-                                "truncate_after": blocksBeforePoll
-                            }
-                        ]
-                        # setting up media sources
-                        postMediaSources = {}
-                        if headerStyle == "image":
-                            headerFilePath = findFile("images/header", validTumblrFileFormats)
-                            if headerFilePath == False:
-                                print("There isn't a valid heading image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"heading\"\n3. Make sure that the heading image is a file type supported by Tumblr")
-                            else:
-                                postMediaSources["heading"] = headerFilePath
-                        if useCompetitorImages == True:
-                            topCompetitorFilePath = headerFilePath = findFile(f"images/{topCompetitorPosition+1}", validTumblrFileFormats)
-                            if topCompetitorFilePath == False:
-                                print(f"There isn't a valid image for competitor {topCompetitorPosition+1}... Attempting to use a placeholder image.")
-                                placeholderFilePath = headerFilePath = findFile("images/placeholder", validTumblrFileFormats)
-                                if placeholderFilePath == False:
-                                    print("There isn't a valid placeholder image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"placeholder\"\n3. Make sure that the heading image is a file type supported by Tumblr")
-                                else:
-                                    postMediaSources["topcompetitor"] = placeholderFilePath
-                            else:
-                                postMediaSources["topcompetitor"] = topCompetitorFilePath
-                            bottomCompetitorFilePath = headerFilePath = findFile(f"images/{bottomCompetitorPosition+1}", validTumblrFileFormats)
-                            if bottomCompetitorFilePath == False:
-                                print(f"There isn't a valid image for competitor {bottomCompetitorPosition+1}... Attempting to use a placeholder image.")
-                                placeholderFilePath = headerFilePath = findFile("images/placeholder", validTumblrFileFormats)
-                                if placeholderFilePath == False:
-                                    print("There isn't a valid placeholder image in the \"images\" directory:\n1. Make sure there is a folder named \"images\" in the folder that contains this program and confirm that the heading image is in there.\n2. Make sure that the heading image is called \"placeholder\"\n3. Make sure that the heading image is a file type supported by Tumblr")
-                                else:
-                                    postMediaSources["bottomcompetitor"] = placeholderFilePath
-                            else:
-                                postMediaSources["bottomcompetitor"] = bottomCompetitorFilePath
-                        client.create_post(
-                            blogname=postedBlog,
-                            tags= actualPollTags,
-                            state= postMethod,
-                            content = postFormat,
-                            layout = postLayout,
-                            media_sources = postMediaSources
-                        )
-                    break
-                case "2":
-                    # updating matchup
-                    print("OK! just type the number next to the WINNING competitor!")
-                    for x in range(int(currentRoundCompetitorQuantity/2)):
-                        while True:
-                            print(f"Matchup {x + 1}:")
-                            response = input(f"1. {finalOrder[2*x]}\n2. {finalOrder[1+(2*x)]}\n3. (Skip this matchup)")
-                            match response:
-                                case "1":
-                                    competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber + 1
-                                    competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber
-                                    break
-                                case "2":
-                                    competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber
-                                    competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber + 1
-                                    break
-                                case "3":
-                                    break
-                                case _:
-                                    print("Please choose a valid option.")
-                        competitorDict = json.dumps(competitorList, indent=2)
-                        f = open("tourny_data.json", "w")
-                        f.write(competitorDict)
-                    roundNumber = roundNumber + 1
-                    finalOrder = []
-                    finalOrderPos = []
-                    finalSeedList = []
-                    for x in range(competitorQuantity):
+                            client.create_post(
+                                blogname=postedBlog,
+                                state= postMethod,
+                                content = actualPostContent,
+                                layout = actualPostLayout,
+                                media_sources = actualMediaSources
+                            )
+                    else:
+                        print("Tags:")
+                        prettyPrintList(actualPostTags, 1)
+                        print("Post content:")
+                        prettyPrintList(actualPostContent, 1)
+                        print("Layout:")
+                        prettyPrintList(actualPostLayout, 1)
+                        print("Media sources:")
+                        for y in actualMediaSources:
+                            print(f"{y}: {actualMediaSources[y]}")                            
+                break
+            case 2:
+                # updating matchup
+                print("OK! just type the number next to the WINNING competitor!")
+                for x in range(int(currentRoundCompetitorQuantity/2)):
+                    stayingList = [makeIncrementingList(competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"][0], roundNumber+1), makeIncrementingList(competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"][0], roundNumber+1)]
+                    progressingList = [makeIncrementingList(competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"][0], roundNumber+2), makeIncrementingList(competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"][0], roundNumber+2)]
+                    selection = getValidNumberSelection(f"Matchup {x + 1} of {int(currentRoundCompetitorQuantity/2)}:", [finalOrder[2*x], finalOrder[1+(2*x)]])
+                    match selection:
+                        case 1:
+                            competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"] = progressingList[0]
+                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"] = stayingList[1]
+                        case 2:
+                            competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"] = stayingList[0]
+                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"] = progressingList[1]
+                competitorDict = json.dumps(competitorList, indent=2)
+                f = open(dataFileName, "w")
+                f.write(competitorDict)
+                roundNumber = roundNumber + 1
+                finalOrder = []
+                finalOrderPos = []
+                finalSeedList = []
+                for x in range(competitorQuantity):
                         dictSection = competitorList[f"competitor{x+1}"]
-                        if dictSection["lastRound"] >= roundNumber:
+                        if max(dictSection["involvedRounds"]) >= roundNumber:
                             finalOrder.append(dictSection["name"])
                             finalOrderPos.append(dictSection["position"])
                             finalSeedList.append(dictSection["seed"])
-                    currentRoundCompetitorQuantity = len(finalOrder)
-                    print("")
-                    print(f"And here is the updated competitor list, for round {roundNumber}:")
-                    for x in range(len(finalOrder)):
-                        print(f"{x+1}. {finalOrder[x]}")
-                    print("")
-                case "3":
-                    # finding the longest name
-                    firstRoundCompetitors = []
-                    maxNameLength = 0
-                    for x in range(1, competitorQuantity+1):
-                        dictSection = competitorList["competitor"+str(x)]
-                        if len(str(dictSection["name"])) > maxNameLength:
-                            maxNameLength = len(str(dictSection["name"]))
-                    #setting up dimensions for image
-                    centerNodeOffset = int(totalRounds)
-                    lengthPerCharacterSize = 8
-                    fontSize = int(2.5*lengthPerCharacterSize)
-                    lineWidth = 4
-                    deadspaceWidth = lineWidth*4
-                    possibleXPositions = [deadspaceWidth]
-                    lastXPos = deadspaceWidth
-                    possibleYPositions = [deadspaceWidth]
-                    pointRadius=int(lineWidth*1.5)
-                    verticalCompetitorSpacing = 2*lengthPerCharacterSize
-                    if maxNameLength < 5:
-                        horizontalCompetitorSpacing = 5*(lengthPerCharacterSize+2)
+                currentRoundCompetitorQuantity = len(finalOrder)
+                print(f"\nAnd here is the updated competitor list, for round {roundNumber}:")
+                for x in range(len(finalOrder)):
+                    print(f"{x+1}. {finalOrder[x]}")
+                if len(finalOrder) == 1:
+                    finalRound = roundNumber
+                    finalRoundSelected = True
+                    print(f"Round {roundNumber} is the final round!")
+            case 3:
+                # finding the longest name
+                firstRoundCompetitors = []
+                maxNameLength = 5
+                for x in range(1, competitorQuantity+1):
+                    dictSection = competitorList["competitor"+str(x)]
+                    if len(str(dictSection["name"])) > maxNameLength:
+                        maxNameLength = len(str(dictSection["name"]))
+                #setting up dimensions for image
+                centerNodeOffset = int(totalRounds)
+                lengthPerCharacterSize = 8
+                fontSize = int(2.5*lengthPerCharacterSize)
+                lineWidth = 4
+                deadspaceWidth = lineWidth*4
+                possibleXPositions = [deadspaceWidth]
+                lastXPos = deadspaceWidth
+                possibleYPositions = [deadspaceWidth]
+                pointRadius=int(lineWidth*1.5)
+                verticalCompetitorSpacing = 2*lengthPerCharacterSize
+                horizontalCompetitorSpacing = (lengthPerCharacterSize+2)*maxNameLength
+                # setting up a grid where every possible matchup is on...
+                alternatingFactor = 1
+                for x in range(1,(4*(int(totalRounds)+1))-2):
+                    if x == 2*(int(totalRounds)+1)-1:
+                        alternatingFactor = 0
+                    if x % 2 == alternatingFactor:
+                        possibleXPositions.append(lastXPos+horizontalCompetitorSpacing)
                     else:
-                        horizontalCompetitorSpacing = (lengthPerCharacterSize+2)*maxNameLength
-                    # there has to be a better way than two very similar cases... Oh well! That's a problem for later me!
-                    if byes == competitorQuantity:
-                        # if competitors are a perfect power of 2
-                        # setting up a grid where every possible matchup is on...
-                        alternatingFactor = 1
-                        for x in range(1, (4*(int(totalRounds)))+1):
-                            if x == 2*(int(totalRounds))+1:
-                                alternatingFactor = 0
-                            if x % 2 == alternatingFactor:
-                                possibleXPositions.append(lastXPos+horizontalCompetitorSpacing)
+                        possibleXPositions.append(lastXPos+5*(lengthPerCharacterSize+2))
+                    lastXPos = possibleXPositions[-1]
+                for x in range(1,int((powerOf2UpperBound))+1):
+                    possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
+                imageHeight = deadspaceWidth+ possibleYPositions[-1]
+                imageLength = possibleXPositions[-2] + deadspaceWidth
+                svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
+                rounds = {}
+                if byes == competitorQuantity:
+                    pretendRoundNumber = roundNumber - 1
+                    rounds[0] = originalNameList
+                else:
+                    pretendRoundNumber = roundNumber
+                    rounds[0]= notByed
+                for x in range(1, totalRounds+2):
+                    roundList = []
+                    if x <= pretendRoundNumber:
+                        for z in range(competitorQuantity):
+                            dictSection=competitorList[f"competitor{z+1}"]
+                            if pretendRoundNumber == roundNumber:
+                                if max(dictSection["involvedRounds"]) >= x:
+                                    roundList.append(dictSection["name"])
                             else:
-                                possibleXPositions.append(lastXPos+5*(lengthPerCharacterSize+2))
-                            lastXPos = possibleXPositions[-1]
-                        for x in range(1,int((2*competitorQuantity))+1):
-                            possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
-                        imageHeight = deadspaceWidth*2+possibleYPositions[-1]
-                        imageLength = possibleXPositions[-1] + 2*deadspaceWidth
-                        svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
-                        rounds = {
-                            0: originalSeedList
-                        }
-                        for x in range(1, totalRounds+2):
-                            roundList = []
-                            if x <= roundNumber:
-                                for z in range(competitorQuantity):
-                                    dictSection=competitorList[f"competitor{z+1}"]
-                                    if dictSection["lastRound"] >= x:
-                                        roundList.append(dictSection["name"])
-                            else:
-                                for y in range(competitorQuantity):
-                                    roundList.append("")
-                            rounds[x] = roundList
-                        print(rounds)
-                        #defining relevant nodes
-                        possiblyRelevantNodes = {}
-                        leftSide = True
-                        universalNodeID = 0
-                        posInLayer = []
-                        maxLevel = int(len(possibleXPositions)/4)+1
-                        for x in range(maxLevel+1):
-                            posInLayer.append(0)
-                        for x in range(int(len(possibleXPositions)/2)+1):
-                            layer = int(len(possibleXPositions)/4)-abs(x-int(len(possibleXPositions)/4))+1
-                            print(f"layer: {layer}")
+                                if max(dictSection["involvedRounds"]) > x:
+                                    roundList.append(dictSection["name"])
+                    else:
+                        for y in range(competitorQuantity):
+                            roundList.append("")
+                    rounds[x] = roundList
+                #defining relevant nodes
+                possiblyRelevantNodes = {}
+                leftSide = True
+                universalNodeID = 0
+                posInLayer = []
+                nodeIDList = []
+                maxLevel = int(len(possibleXPositions)/4)
+                for x in range(maxLevel+1):
+                    posInLayer.append(0)
+                for x in range(int(len(possibleXPositions)/2)):
+                    layer = int(len(possibleXPositions)/4)-abs(x-int(len(possibleXPositions)/4))
+                    if layer == maxLevel:
+                        leftSide = False
+                    if leftSide == True:
+                        side = "left"
+                    else:
+                        side = "right"
+                    nodesToSkip = pow(2, layer)
+                    for y in range(int(len(possibleYPositions))):
+                        if nodesToSkip == 0:
+                            nodesToSkip = pow(2, layer+1) - 1
                             if layer == maxLevel:
-                                leftSide = False
-                            if leftSide == True:
-                                side = "left"
+                                #checking if the node is the center node
+                                possiblyRelevantNodes[universalNodeID] = {
+                                    "xPos": 2*x,
+                                    "yPos": int(len(possibleYPositions)/2)+centerNodeOffset,
+                                    "posInLayer": posInLayer[layer],
+                                    "side": "middle",
+                                    "layer": maxLevel
+                                }
                             else:
-                                side = "right"
-                            nodesToSkip = pow(2, layer)
-                            for y in range(int(len(possibleYPositions))):
-                                if nodesToSkip == 0:
-                                    nodesToSkip = pow(2, layer+1) - 1
-                                    if layer == maxLevel:
-                                        #checking if the node is the center node
-                                        possiblyRelevantNodes[universalNodeID] = {
-                                            "xPos": 2*x,
-                                            "yPos": int(len(possibleYPositions)/2)+centerNodeOffset,
-                                            "layer": maxLevel,
-                                            "posInLayer": posInLayer[layer],
-                                            "side": "middle",
-                                        }
-                                    else:
-                                        possiblyRelevantNodes[universalNodeID] = {
-                                            "xPos": 2*x,
-                                            "yPos": y,
-                                            "layer": layer,
-                                            "posInLayer": posInLayer[layer],
-                                            "side": side,
-                                        }
-                                    universalNodeID = universalNodeID+1
-                                    posInLayer[layer] = posInLayer[layer] + 1
-                                else:
-                                    nodesToSkip = nodesToSkip - 1
-                        for x in possiblyRelevantNodes:
-                            node = possiblyRelevantNodes[x]
-                            print(x, node)
-                        print(maxLevel)
-                        relevantNodes = {}
-                        for x in possiblyRelevantNodes:
-                            node = possiblyRelevantNodes[x]
+                                possiblyRelevantNodes[universalNodeID] = {
+                                    "xPos": 2*x,
+                                    "yPos": y,
+                                    "posInLayer": posInLayer[layer],
+                                    "side": side,
+                                    "layer": layer
+                                }
+                            nodeIDList.append(universalNodeID)
+                            universalNodeID = universalNodeID+1
+                            posInLayer[layer] = posInLayer[layer] + 1
+                        else:
+                            nodesToSkip = nodesToSkip - 1
+                relevantNodes = {}
+                for x in possiblyRelevantNodes:
+                    node = possiblyRelevantNodes[x]
+                    if node["layer"] == 0:
+                        if rounds[0][node["posInLayer"]] == False:
+                            pass
+                        else:
+                            node["competitor"] = rounds[0][node["posInLayer"]]
+                            relevantNodes[x] = node
+                    else:
+                        try:
                             node["competitor"] = rounds[node["layer"]][node["posInLayer"]]
                             relevantNodes[x] = node
-                        for x in relevantNodes:
-                            node = relevantNodes[x]
-                            print(x, node)
-                        for x in relevantNodes:
-                            node = possiblyRelevantNodes[x]
-                            svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
-                        # sorting nodes into side-based lists
-                        leftNodes = []
-                        centerNodes = []
-                        rightNodes = []
-                        for x in relevantNodes:
-                            node=relevantNodes[x]
-                            match node["side"]:
-                                case "left":
-                                    leftNodes.append(x)
-                                case "middle":
-                                    centerNodes.append(x)
-                                case "right":
-                                    rightNodes.append(x)
-                        # sorting nodes into a list by layer
-                        nodesByLayer = []
-                        for x in range(maxLevel+1):
-                            currentLayer = []
-                            for y in possiblyRelevantNodes:
-                                node = possiblyRelevantNodes[y]
-                                if node["layer"] == x:
-                                    currentLayer.append(y)
-                            nodesByLayer.append(currentLayer)
-                        print(nodesByLayer)
-                        # adding name and drawing lines
-                        svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                        svgMarkup += f'<line x1="{possibleXPositions[int((len(possibleXPositions))/2)]-horizontalCompetitorSpacing}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int((len(possibleXPositions))/2)]+horizontalCompetitorSpacing}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                        for x in range(len(nodesByLayer)-1):
-                            currentLayer = nodesByLayer[x]
-                            nextLayer = nodesByLayer[x+1]
-                            for y in range(len(currentLayer)):
-                                currentNodeID = currentLayer[y]
-                                try:
-                                    currentNode = relevantNodes[currentNodeID]
-                                    print(f"node {currentNodeID} does exist!")
-                                    nodeExists = True
-                                except KeyError:
-                                    nodeExists = False
-                                if nodeExists == True:
-                                    nextNodeID = nextLayer[math.floor(y/2)]
-                                    nextNode = relevantNodes[nextNodeID]
-                                    svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[int((currentNode["xPos"]+nextNode["xPos"])/2)]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
-                                    if currentNode["competitor"] == False:
-                                        textToRender = ""
-                                    else:
-                                        textToRender = currentNode["competitor"]
-                                    if currentNode["side"]=="left":
-                                        svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
-                                    if currentNode["side"]=="right":
-                                        svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]-1]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
-                                    if roundNumber > int(totalRounds):
-                                        competitionVictor = finalOrder[0]
-                                        svgMarkup += f'<text x="{possibleXPositions[int(len(possibleXPositions)/2)]}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
-                                else:
-                                    print(f"node {currentNodeID} does not exist!")
-                    else:
-                        # if they aren't
-                        # setting up a grid where every possible matchup is on...
-                        alternatingFactor = 1
-                        for x in range(1,(4*(int(totalRounds)+1))+1):
-                            if x == 2*(int(totalRounds)+1)+1:
-                                alternatingFactor = 0
-                            if x % 2 == alternatingFactor:
-                                possibleXPositions.append(lastXPos+horizontalCompetitorSpacing)
+                        except IndexError:
+                            pass
+                # sorting nodes into side-based lists
+                leftNodes = []
+                centerNodes = []
+                rightNodes = []
+                for x in relevantNodes:
+                    node=relevantNodes[x]
+                    match node["side"]:
+                        case "left":
+                            leftNodes.append(x)
+                        case "middle":
+                            centerNodes.append(x)
+                        case "right":
+                            rightNodes.append(x)
+                # sorting nodes into a list by layer
+                nodesByLayer = []
+                for x in range(maxLevel+1):
+                    currentLayer = []
+                    for y in possiblyRelevantNodes:
+                        node = possiblyRelevantNodes[y]
+                        if node["layer"] == x:
+                            currentLayer.append(y)
+                    nodesByLayer.append(currentLayer)
+                # adding names, drawing lines, then putting dots on top
+                svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                svgMarkup += f'<line x1="{possibleXPositions[int((len(possibleXPositions))/2)-1]-horizontalCompetitorSpacing}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int((len(possibleXPositions))/2)-1]+horizontalCompetitorSpacing}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
+                for x in range(len(nodesByLayer)-1):
+                    currentLayer = nodesByLayer[x]
+                    nextLayer = nodesByLayer[x+1]
+                    for y in range(len(currentLayer)):
+                        currentNodeID = currentLayer[y]
+                        try:
+                            currentNode = relevantNodes[currentNodeID]
+                            nodeExists = True
+                        except KeyError:
+                            nodeExists = False
+                        if nodeExists == True:
+                            nextNodeID = nextLayer[math.floor(y/2)]
+                            nextNode = relevantNodes[nextNodeID]
+                            svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[int((currentNode["xPos"]+nextNode["xPos"])/2)]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
+                            if currentNode["competitor"] == False:
+                                textToRender = ""
                             else:
-                                possibleXPositions.append(lastXPos+5*(lengthPerCharacterSize+2))
-                            lastXPos = possibleXPositions[-1]
-                        for x in range(1,int((powerOf2UpperBound))+1):
-                            possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
-                        imageHeight = deadspaceWidth*2+possibleYPositions[-1]
-                        imageLength = possibleXPositions[-1] + 2*deadspaceWidth
-                        svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
-                        rounds = {
-                        0: notByed
-                        }
-                        for x in range(1, totalRounds+2):
-                            roundList = []
-                            if x <= roundNumber:
-                                for z in range(competitorQuantity):
-                                    dictSection=competitorList[f"competitor{z+1}"]
-                                    if dictSection["lastRound"] >= x:
-                                        roundList.append(dictSection["name"])
-                            else:
-                                for y in range(competitorQuantity):
-                                    roundList.append("")
-                            rounds[x] = roundList
-                        print(rounds)
-                        #defining relevant nodes
-                        possiblyRelevantNodes = {}
-                        leftSide = True
-                        universalNodeID = 0
-                        posInLayer = []
-                        maxLevel = int(len(possibleXPositions)/4)
-                        for x in range(maxLevel+1):
-                            posInLayer.append(0)
-                        for x in range(int(len(possibleXPositions)/2)+1):
-                            layer = int(len(possibleXPositions)/4)-abs(x-int(len(possibleXPositions)/4))
-                            print(f"layer: {layer}")
-                            if layer == maxLevel:
-                                leftSide = False
-                            if leftSide == True:
-                                side = "left"
-                            else:
-                                side = "right"
-                            nodesToSkip = pow(2, layer)
-                            for y in range(int(len(possibleYPositions))):
-                                if nodesToSkip == 0:
-                                    nodesToSkip = pow(2, layer+1) - 1
-                                    if layer == maxLevel:
-                                        #checking if the node is the center node
-                                        possiblyRelevantNodes[universalNodeID] = {
-                                            "xPos": 2*x,
-                                            "yPos": int(len(possibleYPositions)/2)+centerNodeOffset,
-                                            "layer": maxLevel,
-                                            "posInLayer": posInLayer[layer],
-                                            "side": "middle",
-                                        }
-                                    else:
-                                        possiblyRelevantNodes[universalNodeID] = {
-                                            "xPos": 2*x,
-                                            "yPos": y,
-                                            "layer": layer,
-                                            "posInLayer": posInLayer[layer],
-                                            "side": side,
-                                        }
-                                    universalNodeID = universalNodeID+1
-                                    posInLayer[layer] = posInLayer[layer] + 1
-                                else:
-                                    nodesToSkip = nodesToSkip - 1
-                        for x in possiblyRelevantNodes:
-                            node = possiblyRelevantNodes[x]
-                            print(x, node)
-                        print(maxLevel)
-                        print("max in each level:", posInLayer)
-                        relevantNodes = {}
-                        for x in possiblyRelevantNodes:
-                            node = possiblyRelevantNodes[x]
-                            if node["layer"] == 0:
-                                if rounds[0][node["posInLayer"]] == False:
-                                    print(f"Excluded node {x} in layer 0 because it shouldn't exist!")
-                                else:
-                                    node["competitor"] = rounds[0][node["posInLayer"]]
-                                    relevantNodes[x] = node
-                            else:
-                                try:
-                                    node["competitor"] = rounds[node["layer"]][node["posInLayer"]]
-                                    relevantNodes[x] = node
-                                except IndexError:
-                                    print(f"Excluding node {x}!")
-                        for x in relevantNodes:
-                            node = relevantNodes[x]
-                            print(x, node)
-                        for x in relevantNodes:
-                            node = possiblyRelevantNodes[x]
-                            svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
-                        # sorting nodes into side-based lists
-                        leftNodes = []
-                        centerNodes = []
-                        rightNodes = []
-                        for x in relevantNodes:
-                            node=relevantNodes[x]
-                            match node["side"]:
-                                case "left":
-                                    leftNodes.append(x)
-                                case "middle":
-                                    centerNodes.append(x)
-                                case "right":
-                                    rightNodes.append(x)
-                        # sorting nodes into a list by layer
-                        nodesByLayer = []
-                        for x in range(maxLevel+1):
-                            currentLayer = []
-                            for y in possiblyRelevantNodes:
-                                node = possiblyRelevantNodes[y]
-                                if node["layer"] == x:
-                                    currentLayer.append(y)
-                            nodesByLayer.append(currentLayer)
-                        print(nodesByLayer)
-                        # adding name and drawing lines
-                        svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                        svgMarkup += f'<line x1="{possibleXPositions[int((len(possibleXPositions))/2)]-horizontalCompetitorSpacing}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int((len(possibleXPositions))/2)]+horizontalCompetitorSpacing}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
-                        for x in range(len(nodesByLayer)-1):
-                            currentLayer = nodesByLayer[x]
-                            nextLayer = nodesByLayer[x+1]
-                            for y in range(len(currentLayer)):
-                                currentNodeID = currentLayer[y]
-                                try:
-                                    currentNode = relevantNodes[currentNodeID]
-                                    print(f"node {currentNodeID} does exist!")
-                                    nodeExists = True
-                                except KeyError:
-                                    nodeExists = False
-                                if nodeExists == True:
-                                    nextNodeID = nextLayer[math.floor(y/2)]
-                                    nextNode = relevantNodes[nextNodeID]
-                                    svgMarkup += f'<path stroke="black" stroke-width="{lineWidth}" fill="none" d="M {possibleXPositions[currentNode["xPos"]]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[int((currentNode["xPos"]+nextNode["xPos"])/2)]} {possibleYPositions[currentNode["yPos"]]} L {possibleXPositions[nextNode["xPos"]]} {possibleYPositions[nextNode["yPos"]]}" />\n'
-                                    if currentNode["competitor"] == False:
-                                        textToRender = ""
-                                    else:
-                                        textToRender = currentNode["competitor"]
-                                    if currentNode["side"]=="left":
-                                        svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
-                                    if currentNode["side"]=="right":
-                                        svgMarkup += f'<text x="{possibleXPositions[currentNode["xPos"]-1]+pointRadius}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
-                                    if roundNumber > int(totalRounds):
-                                        competitionVictor = finalOrder[0]
-                                        svgMarkup += f'<text x="{possibleXPositions[int(len(possibleXPositions)/2)]}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
-                                else:
-                                    print(f"node {currentNodeID} does not exist!")
-                    svgMarkup += '</svg>'
-                    try:
-                        f = open("bracket.svg", "x")
-                    except FileExistsError:
-                        os.remove("bracket.svg")
-                        f = open("bracket.svg", "x")
-                    w = open("bracket.svg", "w")
-                    w.write(str(svgMarkup))
-                    w.close()
-                    print('Saved bracket image to "bracket.svg"')
-                    break
-                case "4":
-                    # updating tournament data
-                    while True:
-                        response = input("What would you like to change?\n1. Tournament Settings\n2. Competitor Information\n")
-                        match response:
-                            case "1":
-                                # change tornament settings
-                                while True:
-                                    print("Here are the tournament's current settings:")
-                                    for x in competitorList["tournamentInfo"]:
-                                        print(f'{x}: {competitorList["tournamentInfo"][x]}')
-                                    response = input("What do you want to change?\n1. Save updated information\n2. The poll question\n3. The poll tags\n4. The header type\n5. The header text\n6. The header alt text\n7. Toggle whether competitor images are used\n8. Edit additional questions\n9. Edit placeholder propaganda\n")
-                                    match response:
-                                        case "1":
-                                            competitorList["tournamentInfo"] = competitionSettings
-                                            competitorDict = json.dumps(competitorList, indent=2)
-                                            w=open("tourny_data.json", "w")
-                                            w.write(competitorDict)
-                                            w.close
-                                            print("Saved all changes to file!")
-                                            break
-                                        case "2":
-                                            print("Here is the current poll question:")
-                                            print(competitionSettings["pollQuestion"])
-                                            newQuestion = input("What do you want the new question to be?\n")
-                                            print(f'OK! The new poll question is "{newQuestion}"')
-                                            competitionSettings["pollQuestion"] = newQuestion
-                                        case "3":
-                                            print("Editing the poll tags!\n(note that the round and the competitors' names are added automatically.)")
-                                            while True:
-                                                print("Here are the tags, arranged by their list index:")
-                                                if len(competitionSettings["pollTags"]) == 0:
-                                                    print("(no entries)")
-                                                else:
-                                                    for x in range(len(competitionSettings["pollTags"])):
-                                                        #f strings aren't working for some reason here...
-                                                        print(str(x)+". \""+competitionSettings["pollTags"][x]+"\"")
-                                                listEditMethod = input("\nWhat do you want to do?\n1. Go back\n2. Delete entry\n3. Edit entry\n4. Add entry\n")
-                                                match listEditMethod:
-                                                    case "1":
-                                                        break
-                                                    case "2":
-                                                        while True:
-                                                            try:
-                                                                relevantIndex=int(input("Please type the index of the entry you wish to delete.\n(type a negative number to clear the list)\n"))
-                                                                if relevantIndex < 0:
-                                                                    competitionSettings["pollTags"] = []
-                                                                    break
-                                                                else:
-                                                                    if relevantIndex in range(len(competitionSettings["pollTags"])):
-                                                                        print(f"Deleting entry {relevantIndex}")
-                                                                        competitionSettings["pollTags"].pop(relevantIndex)
-                                                                        break
-                                                                    else:
-                                                                        print("Please type the index of an entry in the list!")
-                                                            except ValueError:
-                                                                print("Please type an integer!")
-                                                    case "3":
-                                                        while True:
-                                                            try:
-                                                                relevantIndex=int(input("Please type the index of the entry you wish to edit.\n"))
-                                                                if relevantIndex in range(len(competitionSettings["pollTags"])):
-                                                                    newEntry = input(f"What would you like the entry at {relevantIndex} to say?\n")
-                                                                    competitionSettings["pollTags"][relevantIndex] = newEntry
-                                                                    break
-                                                                else:
-                                                                    print("Please type the index of an entry in the list!")
-                                                            except ValueError:
-                                                                print("Please type an integer!")
-                                                    case "4":
-                                                        newEntry = input("What entry would you like to add?\n")
-                                                        competitionSettings["pollTags"].append(newEntry)
-                                                    case _:
-                                                        print("Please select a valid option!")
-                                        case "4":
-                                            while True:
-                                                headerOption = input("Which heading style should be used?\n1. None\n2. Text\n3. Image\n")
-                                                match headerOption:
-                                                    case "1":
-                                                        competitionSettings["headerSyle"] = "none"
-                                                        break
-                                                    case "2":
-                                                        competitionSettings["headerSyle"] = "text"
-                                                        break
-                                                    case "3":
-                                                        competitionSettings["headerSyle"] = "image"
-                                                        break
-                                                    case _:
-                                                        print("Please select a valid option!")
-                                        case "5":
-                                            print("Here is the current header text:")
-                                            if competitionSettings["headerText"] == False:
-                                                print("(no header text)")
-                                            else:
-                                                print(competitionSettings["headerText"])
-                                            competitionSettings["headerText"] = input("What should the new header text be?\n")
-                                        case "6":
-                                            if competitionSettings["headerImageAltText"] == False:
-                                                print("(no header alt text)")
-                                            else:
-                                                print(competitionSettings["headerImageAltText"])
-                                            competitionSettings["headerImageAltText"] = input("What should the header image's new alt text be?\n")
-                                        case "7":
-                                            if competitionSettings["useCompetitorImages"] == True:
-                                                competitionSettings["useCompetitorImages"] = False
-                                                print("No longer using competitor images!")
-                                            else:
-                                                competitionSettings["useCompetitorImages"] = True
-                                                print("Now using competitor images!")
-                                        case "8":
-                                            print("Editing the extra answers!")
-                                            while True:
-                                                print("Here are the current extra answers, arranged by their list index:")
-                                                if len(competitionSettings["extraAnswers"]) == 0:
-                                                    print("(no entries)")
-                                                else:
-                                                    for x in range(len(competitionSettings["extraAnswers"])):
-                                                        #f strings aren't working for some reason here...
-                                                        print(str(x)+". \""+competitionSettings["extraAnswers"][x]+"\"")
-                                                listEditMethod = input("\nWhat do you want to do?\n1. Go back\n2. Delete entry\n3. Edit entry\n4. Add entry\n")
-                                                match listEditMethod:
-                                                    case "1":
-                                                        break
-                                                    case "2":
-                                                        while True:
-                                                            try:
-                                                                relevantIndex=int(input("Please type the index of the entry you wish to delete.\n(type a negative number to clear the list)\n"))
-                                                                if relevantIndex < 0:
-                                                                    competitionSettings["extraAnswers"] = []
-                                                                    break
-                                                                else:
-                                                                    if relevantIndex in range(len(competitionSettings["extraAnswers"])):
-                                                                        print(f"Deleting entry {relevantIndex}")
-                                                                        competitionSettings["extraAnswers"].pop(relevantIndex)
-                                                                        break
-                                                                    else:
-                                                                        print("Please type the index of an entry in the list!")
-                                                            except ValueError:
-                                                                print("Please type an integer!")
-                                                    case "3":
-                                                        while True:
-                                                            try:
-                                                                relevantIndex=int(input("Please type the index of the entry you wish to edit.\n"))
-                                                                if relevantIndex in range(len(competitionSettings["extraAnswers"])):
-                                                                    newEntry = input(f"What would you like the entry at {relevantIndex} to say?\n")
-                                                                    competitionSettings["extraAnswers"][relevantIndex] = newEntry
-                                                                    break
-                                                                else:
-                                                                    print("Please type the index of an entry in the list!")
-                                                            except ValueError:
-                                                                print("Please type an integer!")
-                                                    case "4":
-                                                        newEntry = input("What entry would you like to add?\n")
-                                                        competitionSettings["extraAnswers"].append(newEntry)
-                                                    case _:
-                                                        print("Please select a valid option!")
-                                            competitionSettings["extraAnswerQuantity"] = len(competitionSettings["extraAnswers"])
-                                        case "9":
-                                            print("Current placeholder propaganda when there is none:")
-                                            print(competitionSettings["defaultPropaganda"])
-                                            competitionSettings["defaultPropaganda"] = input("What should the new placeholder propaganda be?\n")
-                                break
-                            case "2":
-                                while True:
-                                    print("Here is every competitor, ordered by their position value:")
-                                    for x in range(len(originalNameList)):
-                                        print(f"{x+1}. {originalNameList[x]}")
-                                    try:
-                                        relevantCompetitorPos = int(input("Type the position of the competitor whose info you wish to edit\n"))
-                                        if relevantCompetitorPos <= competitorQuantity:
-                                            if relevantCompetitorPos > 0:
-                                                print(f"Editing the data of the competitor called {originalNameList[relevantCompetitorPos-1]}")
-                                                break
-                                        print("Please choose a valid competitor!")
-                                    except KeyError:
-                                        print("Please type an integer!")
-                                dictSection = competitorList[f"competitor{relevantCompetitorPos}"]
-                                print("Here is all the information on this competitor:")
-                                for x in dictSection:
-                                    print(f"{x}: {dictSection[x]}")
-                                while True:
-                                    response = input("What do you want to edit?\n1. Nothing (save changes)\n2. Name\n3. Propaganda Title\n4. Alt text\n5. Competitor Propaganda\n")
-                                    match response:
-                                        case "1":
-                                            competitorList[f"competitor{relevantCompetitorPos}"] = dictSection
-                                            competitorDict = json.dumps(competitorList, indent=2)
-                                            w=open("tourny_data.json", "w")
-                                            w.write(competitorDict)
-                                            w.close
-                                            print("Saved all changes to file!")
-                                            originalNameList[relevantCompetitorPos-1] = dictSection["name"]
-                                            break
-                                        case "2":
-                                            print("Current name of competitor:")
-                                            print(dictSection["name"])
-                                            dictSection["name"] = input("What should this competitor's new name be?\n")
-                                        case "3":
-                                            print("Current propaganda title of competitor:")
-                                            print(dictSection["propagandaTitle"])
-                                            dictSection["propagandaTitle"] = input("What should this competitor's new propaganda title be?\n")
-                                        case "4":
-                                            print("Current image alt text of competitor:")
-                                            if dictSection["altText"] == False:
-                                                print("(no alt text)")
-                                            else:
-                                                print(dictSection["altText"])
-                                            dictSection["altText"] = input("What should this competitor's new image alt text be?\n")
-                                        case "5":
-                                            print("Editing this competitor's propaganda!")
-                                            while True:
-                                                print("Here are the current bits of propaganda, arranged by their list index:")
-                                                if len(dictSection["propaganda"]) == 0:
-                                                    print("(no entries)")
-                                                else:
-                                                    for x in range(len(dictSection["propaganda"])):
-                                                        #f strings aren't working for some reason here...
-                                                        print(str(x)+". \""+dictSection["propaganda"][x]+"\"")
-                                                listEditMethod = input("\nWhat do you want to do?\n1. Go back\n2. Delete entry\n3. Edit entry\n4. Add entry\n")
-                                                match listEditMethod:
-                                                    case "1":
-                                                        break
-                                                    case "2":
-                                                        while True:
-                                                            try:
-                                                                relevantIndex=int(input("Please type the index of the entry you wish to delete.\n(type a negative number to clear the list)\n"))
-                                                                if relevantIndex < 0:
-                                                                    response = input("Are you sure you want to delete all the propaganda? (y/n)\n")
-                                                                    if response == "y":
-                                                                        dictSection["propaganda"] = []
-                                                                    break
-                                                                else:
-                                                                    if relevantIndex in range(len(dictSection["propaganda"])):
-                                                                        print(f"Deleting entry {relevantIndex}")
-                                                                        dictSection["propaganda"].pop(relevantIndex)
-                                                                        break
-                                                                    else:
-                                                                        print("Please type the index of an entry in the list!")
-                                                            except ValueError:
-                                                                print("Please type an integer!")
-                                                    case "3":
-                                                        while True:
-                                                            try:
-                                                                relevantIndex=int(input("Please type the index of the entry you wish to edit.\n"))
-                                                                if relevantIndex in range(len(dictSection["propaganda"])):
-                                                                    newEntry = input(f"What would you like the entry at {relevantIndex} to say?\n")
-                                                                    dictSection["propaganda"][relevantIndex] = newEntry
-                                                                    break
-                                                                else:
-                                                                    print("Please type the index of an entry in the list!")
-                                                            except ValueError:
-                                                                print("Please type an integer!")
-                                                    case "4":
-                                                        newEntry = input("What entry would you like to add?\n")
-                                                        dictSection["propaganda"].append(newEntry)
-                                                    case _:
-                                                        print("Please select a valid option!")
-                                break
-                            case _:
-                                print("That's not an option!")
-                case _:
-                    print("That's not an option :(")
-    except FileNotFoundError:
-        print("Well, there isn't a data file...")
+                                textToRender = currentNode["competitor"]
+                            svgMarkup += f'<text x="{int((possibleXPositions[currentNode["xPos"]]+ possibleXPositions[int((currentNode["xPos"]+nextNode["xPos"])/2)])/2)}" y="{possibleYPositions[currentNode["yPos"]-1]+int(fontSize/2)}" fill="black" text-anchor="middle" stroke="black" font-size="{fontSize}">{textToRender}</text>\n'
+                            if len(finalOrder) == 1:
+                                competitionVictor = finalOrder[0]
+                                svgMarkup += f'<text x="{int(imageLength/2)}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
+                        else:
+                            pass
+                for x in relevantNodes:
+                    node = possiblyRelevantNodes[x]
+                    svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
+                svgMarkup += '</svg>'
+                try:
+                    f = open(bracketImageName, "x")
+                except FileExistsError:
+                    os.remove(bracketImageName)
+                    f = open(bracketImageName, "x")
+                w = open(bracketImageName, "w")
+                w.write(str(svgMarkup))
+                w.close()
+                print(f'Saved bracket image to "{bracketImageName}"')
+                break
+            case 4:
+                # updating tournament data
+                print("Sorry! This feature is currently disabled.\nYou can always edit values via the JSON file itself until this functionality is restored.")

@@ -3,10 +3,12 @@ NAMING CONVENTIONS:
 All files must be in PNG, JPG, WEBP, or GIF format, because those are the formats Tumblr supports.
 The files already in here, including this one, are simply for your own reference; feel free to delete and/or replace them.
 
+Other than that, the following applies only to the default templates:
+
 For competitor images:
 Name the image after the competitor's position.
 For instance, an image called "1.png" would correspond to whatever competitor has a position of 1.
-You can easily see the order of competitors in the "tourny_data.json" file.
+You can easily see the order of competitors in the data file with all the competition information.
 If the program can't find a valid image, it will instead look for an image called "placeholder"
 
 For the header:
