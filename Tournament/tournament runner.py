@@ -34,8 +34,8 @@ def formatStringFromJson(stringToFormat):
         topCompetitorPropagandaTitle = topCompetitorDict["propagandaTitle"],
         bottomCompetitorPropagandaTitle = bottomCompetitorDict["propagandaTitle"],
 
-        topCompetitorLastRound = topCompetitorDict["lastRound"],
-        bottomCompetitorLastRound = bottomCompetitorDict["lastRound"],
+        topCompetitorRounds = topCompetitorDict["involvedRounds"],
+        bottomCompetitorRounds = bottomCompetitorDict["involvedRounds"],
 
         topCompetitorByedRounds = topCompetitorDict["byedRounds"],
         bottomCompetitorByedRounds = bottomCompetitorDict["byedRounds"],
@@ -46,10 +46,20 @@ def formatStringFromJson(stringToFormat):
         roundNumber=roundNumber,
         competitorQuantity = competitorQuantity,
         pollQuantity = int(currentRoundCompetitorQuantity/2),
-        currentPoll = ":(",
+        currentPoll = x+1,
         currentRoundCompetitorQuantity = currentRoundCompetitorQuantity
     )
     return formattedString
+
+def makeIncrementingList(startValue, stopValue):
+    countingList = []
+    if startValue == stopValue:
+        countingList.append(startValue)
+    else:
+        for value in range(startValue, stopValue):
+            countingList.append(value)
+    return countingList
+
 
 def prettyPrintList(listToPrint, indexOffset):
     for entry in range(len(listToPrint)):
@@ -263,7 +273,6 @@ extantRoundNumber = False
 competitorQuantity = 0
 competitorNames = []
 propagandaTitles = []
-noByeValue = -1
 
 # checking if a tournament data file exists
 try:
@@ -285,46 +294,29 @@ except FileNotFoundError:
 # automatically starting a new competition if there is no file
 if dataFileExists == False:
     roundNumber = -1
+# coming to terms with the file existing
 else:
     while True:
         response = getValidNumberSelection("Would you like to continue the current competition or create a new one?", ["Continue the current competition", "Start a new competition"])
         match response:
             case 1:
                 # getting the list of valid rounds
-                allByed = True
-                byesByRound = {}
-                competitorsByRound = {}
-                minimumRound = 0
+                allowedRounds = []
+                allowedRoundsExclusive = []
+                minimumExclusiveRound = 0
                 for x in range(len(competitorList)-1):
-                    if competitorList[f"competitor{x+1}"]["lastRound"] > minimumRound:
-                        minimumRound = competitorList[f"competitor{x+1}"]["lastRound"]
-                    while len(competitorsByRound) < minimumRound+1:
-                        competitorsByRound[len(competitorsByRound)] = 0
-                    while len(byesByRound) < minimumRound:
-                        byesByRound[len(byesByRound)] = 0
-                    competitorsByRound[competitorList[f"competitor{x+1}"]["lastRound"]] = competitorsByRound[competitorList[f"competitor{x+1}"]["lastRound"]]+1
-                    for y in competitorList[f"competitor{x+1}"]["byedRounds"]:
-                        byesByRound[y]=byesByRound[y]+1
+                    dictSection = competitorList[f"competitor{x+1}"]
+                    for y in dictSection["involvedRounds"]:
+                        if y not in allowedRounds:
+                            allowedRounds.append(y)
+                        if y != min(dictSection["involvedRounds"]):
+                            if y not in allowedRoundsExclusive:
+                                allowedRoundsExclusive.append(y)
                 
-                orderedValidRounds = []
-                for x in competitorsByRound:
-                    orderedValidRounds.append(x)
-
-                for x in range(1, len(orderedValidRounds)):
-                    if competitorsByRound[orderedValidRounds[x]] == byesByRound[orderedValidRounds[x]-1] and competitorsByRound[orderedValidRounds[x]-1] > 0:
-                        orderedValidRounds.remove(x)
-                    if competitorsByRound[orderedValidRounds[x-1]] == 0:
-                        orderedValidRounds.remove(x-1)
-                
-                # random sidequest to figure out if there is a final round
-                isFinalRound = False
-                for x in orderedValidRounds:
-                    if competitorsByRound[x] == 1:
-                        isFinalRound = True
-                        finalRound = x
-                    else:
-                        # setting finalRound to False makes everything act like the final round is 0... which is obviously bad
-                        finalRound = -1
+                if len(allowedRoundsExclusive)>0:
+                    orderedValidRounds = makeIncrementingList(min(allowedRounds), max(allowedRoundsExclusive)+1)
+                else:
+                    orderedValidRounds = [min(allowedRounds)]
 
                 # back to getting a list of rounds
                 prettyValidRounds = []
@@ -346,14 +338,8 @@ if roundNumber < 0:
     # setting a bunch of random default data
     tournamentType = "Single Elimination"
     pollQuestion = "Which competitor deserves to win this competition the most?"
-    pollTags = ["tumblr tournament", "poll", "polls"]
+    pollTags = ["tumblr tournament", "poll", "polls", "round {roundNumber}", "{topCompetitorName}", "{bottomCompetitorName}"]
     propagandaPlaceholder = "(no propaganda submitted)"
-    if autoAltText == True:
-        placehoderImageAltText = "A placeholder image; the intended one could not be found."
-        headerAltText = "The post header."
-    else:
-        placehoderImageAltText = ""
-        headerAltText = ""
     # getting number of competitors
     while True:
         try:
@@ -439,7 +425,7 @@ if roundNumber < 0:
                     "type": "images/png",
                     "identifier": "heading"
                 }],
-                "alt_text": headerAltText
+                "alt_text": "Header"
             })
     
     print(f"Blocks before poll: {blocksBeforePoll}")
@@ -465,13 +451,12 @@ if roundNumber < 0:
         })
     else:
         imageBlocks = []
-    
-    print(f"Blocks before poll: {blocksBeforePoll}")
+
     # setting up poll
     postFormat.append({
         "type": "poll",
         "question": pollQuestion,
-        "client_id": "Tumblr forces you to give a poll UUID, but then ignores it and creates its own. Isn't that odd?",
+        "client_id": "Tumblr asks you to give a poll UUID, but then ignores it and creates its own. Isn't that odd?",
         "answers": [{"answer_text": "{topCompetitorName}"}, {"answer_text": "{bottomCompetitorName}"}],
         "settings":{
             "closed_status": "closed-after",
@@ -502,7 +487,6 @@ if roundNumber < 0:
     })
 
     totalBlocks = len(postFormat)
-    print(f"Total blocks: {totalBlocks}")
 
     # setting up dummy layout
     display = []
@@ -763,14 +747,8 @@ if roundNumber < 0:
                 "totalRounds": int(math.log(powerOf2UpperBound, 2))
             },
             "Parameters": {
-                "useCompetitorImages": useCompetitorImages,
-                "headerStyle": headerStyle,
-                "headerImageAltText": headerAltText,
-                "placeholderImageAltText": placehoderImageAltText,
-                "headerText": headerText,
+                "placeholderImageAltText": "Unknown",
                 "defaultPropaganda": propagandaPlaceholder,
-                "pollQuestion": pollQuestion,
-                "extraAnswers": [],
                 "postData": {
                     "content": postFormat,
                     "layout": postLayout,
@@ -782,10 +760,7 @@ if roundNumber < 0:
     }
     finalOrder = []
     for x in range(len(finalSeedList)):
-        if autoAltText == True:
-            altText = f"{competitorNames[int(finalSeedList[x]-1)]}"
-        else:
-            altText = ""
+        altText = f"{competitorNames[int(finalSeedList[x]-1)]}"
         if finalSeedList[x] in seedsToBye:
             startRound = 1
             gotBye = [0]
@@ -795,7 +770,7 @@ if roundNumber < 0:
         dictSection = {
         "position": x+1,
         "seed": finalSeedList[x],
-        "lastRound": startRound,
+        "involvedRounds": [startRound],
         "byedRounds": gotBye,
         "name": competitorNames[int(finalSeedList[x]-1)],
         "propagandaTitle": propagandaTitles[int(finalSeedList[x]-1)],
@@ -814,10 +789,6 @@ if roundNumber < 0:
 # dealing with a competition in progress
 if roundNumber >= 0:
     # loading competition data
-    if roundNumber == finalRound:
-        finalRoundSelected = True
-    else:
-        finalRoundSelected = False
     f = open(dataFileName)
     competitorList = json.load(f)
     f.close()
@@ -832,14 +803,8 @@ if roundNumber >= 0:
 
     totalRounds = tournamentConstants["totalRounds"]
     competitionType = tournamentConstants["type"]
-    useCompetitorImages = tournamentOptions["useCompetitorImages"]
-    headerStyle = tournamentOptions["headerStyle"]
-    headerText = tournamentOptions["headerText"]
-    headerAltText = tournamentOptions["headerImageAltText"]
     placehoderImageAltText = tournamentOptions["placeholderImageAltText"]
     propagandaPlaceholder = tournamentOptions["defaultPropaganda"]
-    pollQuestion = tournamentOptions["pollQuestion"]
-    extraAnswers = tournamentOptions["extraAnswers"]
     # calculating some more info on the fly
     powerOf2UpperBound = 1
     while powerOf2UpperBound < competitorQuantity:
@@ -868,10 +833,7 @@ if roundNumber >= 0:
         else:
             print(f"competitor {x} exists and doesn't have a bye this round!")
             notByed.append(dictSection["name"])
-            # finding info for current round
-            originalSeedList.append(dictSection["seed"])
-            originalNameList.append(dictSection["name"])
-        if dictSection["lastRound"] >= roundNumber:
+        if max(dictSection["involvedRounds"]) >= roundNumber:
             if roundNumber not in dictSection["byedRounds"]:
                 competitorCounter = competitorCounter + 1
                 finalOrder.append(dictSection["name"])
@@ -880,6 +842,12 @@ if roundNumber >= 0:
     currentRoundCompetitorQuantity = len(finalOrder)
     print(f"Here are all the competitors that are in round {roundNumber}:")
     prettyPrintList(finalOrder, 1)
+
+    if len(finalOrder) == 1:
+        finalRoundSelected = True
+    else:
+        finalRoundSelected = False
+
     
     while True:
         if finalRoundSelected == True:
@@ -909,7 +877,6 @@ if roundNumber >= 0:
                         if firstMatchup<=int(currentRoundCompetitorQuantity/2):
                             if lastMatchup<=int(currentRoundCompetitorQuantity/2):
                                 if firstMatchup<=lastMatchup:
-                                    print("broke from the loop!")
                                     break
                         print("Make sure that both bounds are in the amount of matchups there are, and that the final poll is after or the same as the first one!")
                     except ValueError:
@@ -962,6 +929,8 @@ if roundNumber >= 0:
                                 dummyBlock["text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["text"])
                             case "image":
                                 dummyBlock["alt_text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["postData"]["content"][y]["alt_text"])
+                                if findFile(formatStringFromJson(dummyPostData["mediaSources"][dummyBlock['media'][0]["identifier"]]), validTumblrImageFileFormats) == False:
+                                    dummyBlock["alt_text"] = formatStringFromJson(competitorList["Tournament Info"]["Parameters"]["placeholderImageAltText"])
                             case "poll":
                                 dummyAnswers = []
                                 for z in range(len(dummyBlock["answers"])):
@@ -991,7 +960,6 @@ if roundNumber >= 0:
                                         expandedRanges[loopNumber]["additionalBlocks"]=additionalBlocks
                                     case "bottom":
                                         if len(bottomCompetitorDict["propaganda"]) == 0:
-                                            print(f"Competitor {bottomCompetitor} has no propaganda.")
                                             dummyBlock = {"type": "text", "text": tournamentOptions["defaultPropaganda"]}
                                         else:
                                             additionalBlocks = len(bottomCompetitorDict["propaganda"])-1
@@ -1095,14 +1063,16 @@ if roundNumber >= 0:
                 # updating matchup
                 print("OK! just type the number next to the WINNING competitor!")
                 for x in range(int(currentRoundCompetitorQuantity/2)):
+                    stayingList = [makeIncrementingList(competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"][0], roundNumber+1), makeIncrementingList(competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"][0], roundNumber+1)]
+                    progressingList = [makeIncrementingList(competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"][0], roundNumber+2), makeIncrementingList(competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"][0], roundNumber+2)]
                     selection = getValidNumberSelection(f"Matchup {x + 1} of {int(currentRoundCompetitorQuantity/2)}:", [finalOrder[2*x], finalOrder[1+(2*x)]])
                     match selection:
                         case 1:
-                            competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber + 1
-                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber
+                            competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"] = progressingList[0]
+                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"] = stayingList[1]
                         case 2:
-                            competitorList[f"competitor{finalOrderPos[x*2]}"]["lastRound"] = roundNumber
-                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["lastRound"] = roundNumber + 1
+                            competitorList[f"competitor{finalOrderPos[x*2]}"]["involvedRounds"] = stayingList[0]
+                            competitorList[f"competitor{finalOrderPos[1+(x*2)]}"]["involvedRounds"] = progressingList[1]
                 competitorDict = json.dumps(competitorList, indent=2)
                 f = open(dataFileName, "w")
                 f.write(competitorDict)
@@ -1112,7 +1082,7 @@ if roundNumber >= 0:
                 finalSeedList = []
                 for x in range(competitorQuantity):
                         dictSection = competitorList[f"competitor{x+1}"]
-                        if dictSection["lastRound"] >= roundNumber:
+                        if max(dictSection["involvedRounds"]) >= roundNumber:
                             finalOrder.append(dictSection["name"])
                             finalOrderPos.append(dictSection["position"])
                             finalSeedList.append(dictSection["seed"])
@@ -1156,7 +1126,7 @@ if roundNumber >= 0:
                     lastXPos = possibleXPositions[-1]
                 for x in range(1,int((powerOf2UpperBound))+1):
                     possibleYPositions.append(deadspaceWidth+(x*verticalCompetitorSpacing))
-                imageHeight = deadspaceWidth*2+ possibleYPositions[-1]
+                imageHeight = deadspaceWidth+ possibleYPositions[-1]
                 imageLength = possibleXPositions[-2] + deadspaceWidth
                 svgMarkup =f'<svg width="{imageLength}" height="{imageHeight}" xmlns="http://www.w3.org/2000/svg">\n<rect width="{imageLength}" height="{imageHeight}" x="0" y ="0" fill="white" />\n'
                 rounds = {}
@@ -1172,10 +1142,10 @@ if roundNumber >= 0:
                         for z in range(competitorQuantity):
                             dictSection=competitorList[f"competitor{z+1}"]
                             if pretendRoundNumber == roundNumber:
-                                if dictSection["lastRound"] >= x:
+                                if max(dictSection["involvedRounds"]) >= x:
                                     roundList.append(dictSection["name"])
                             else:
-                                if dictSection["lastRound"] > x:
+                                if max(dictSection["involvedRounds"]) > x:
                                     roundList.append(dictSection["name"])
                     else:
                         for y in range(competitorQuantity):
@@ -1239,9 +1209,6 @@ if roundNumber >= 0:
                             relevantNodes[x] = node
                         except IndexError:
                             pass
-                for x in relevantNodes:
-                    node = possiblyRelevantNodes[x]
-                    svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
                 # sorting nodes into side-based lists
                 leftNodes = []
                 centerNodes = []
@@ -1264,7 +1231,7 @@ if roundNumber >= 0:
                         if node["layer"] == x:
                             currentLayer.append(y)
                     nodesByLayer.append(currentLayer)
-                # adding name and drawing lines
+                # adding names, drawing lines, then putting dots on top
                 svgMarkup += f'<line x1="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y1="{possibleYPositions[int(len(possibleYPositions)/2)+centerNodeOffset]}" x2="{possibleXPositions[int(len(possibleXPositions)/2)-1]}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
                 svgMarkup += f'<line x1="{possibleXPositions[int((len(possibleXPositions))/2)-1]-horizontalCompetitorSpacing}" y1="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" x2="{possibleXPositions[int((len(possibleXPositions))/2)-1]+horizontalCompetitorSpacing}" y2="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset]}" style="stroke:black;stroke-width:{lineWidth}"/>\n'
                 for x in range(len(nodesByLayer)-1):
@@ -1291,6 +1258,9 @@ if roundNumber >= 0:
                                 svgMarkup += f'<text x="{int(imageLength/2)}" y="{possibleYPositions[int(len(possibleYPositions)/2)-centerNodeOffset-1]+lineWidth}" fill="black" stroke="black" text-anchor="middle" font-size="{2*fontSize}">{str(competitionVictor)}</text>\n'
                         else:
                             pass
+                for x in relevantNodes:
+                    node = possiblyRelevantNodes[x]
+                    svgMarkup += f'<circle cx="{possibleXPositions[node["xPos"]]}" cy="{possibleYPositions[node["yPos"]]}" r="{pointRadius}" fill="black" />\n'
                 svgMarkup += '</svg>'
                 try:
                     f = open(bracketImageName, "x")
