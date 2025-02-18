@@ -8,7 +8,11 @@ Currently, this program can do the following things:
 ## Setting up a competition
 When you run the program, you will be prompted to enter your Tumblr API keys, assuming you have pytumblr2 installed. Afterwards, a new competition will automatically be started if there is not an existing competition data file. You will be asked the following questions:
 1. How many competitors there are. This can be any integer; if the amount of competitors in not a power of 2, then byes will be applied as needed.
-2. What seeding method should be used. Currently, the following seeding options are available:
+2. What seeding method should be used.
+3. The names of each competitor
+Afterwards, you will be taken to the first round of the competetition: round 1 (if you have a number of competitors that is a power of 2) or round 0 (in all other cases).
+
+Currently, the following seeding options are available:
 ### 1. No Seeding
 This returns the competitors in the order that they were entered in.
 ### 2. Random Seeding
@@ -21,8 +25,6 @@ This returns the competitors in an order that follows the methodology of cohort 
 This is Equal gap seeding, as proposed by Alexander Karpov [here](https://www.sciencedirect.com/science/article/pii/S0167637716300876). Again, this follows a recursive pattern. However, instead of consistently attempting to place the strongest competitors against the weakest competitors for as long as possible, it instead seeks to spread out pairs of competitors (1 and 2, 3 and 4, and so on) evenly throughout the list.
 3. Whether competitor images should be used. See "000 read me please.txt" in the "assets" directory for information on how to name images so that default post templates use them properly.
 4. The heading style. If you choose text, you will be prompted to enter the text that the heading should have. If you choose image, again reference "000 read me please.txt" in the "assets" directory for information on how to name images so that default post templates use them properly.
-
-From here, you will be prompted to enter names for competitors (from first seed to last seed) until all competitors have a name. Afterwards, you will be taken to the first round of the competetition: round 1 (if you have a number of competitors that is a power of 2) or round 0 (in all other cases).
 
 ## Running a competition
 Upon selecting a round, the program will load all the competitors that made it to that round and list them out. From there, there are four options:
